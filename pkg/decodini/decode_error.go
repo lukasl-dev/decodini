@@ -5,27 +5,31 @@ import (
 	"strings"
 )
 
-type EncodeError struct {
+type DecodeError struct {
 	Path []any
 	Err  error
 }
 
-var _ error = (*EncodeError)(nil)
+var _ error = (*DecodeError)(nil)
 
-func newEncodeError(path []any, err error) *EncodeError {
-	return &EncodeError{Path: path, Err: err}
+func newDecodeError(path []any, err error) *DecodeError {
+	return &DecodeError{Path: path, Err: err}
+}
+
+func newDecodeErrorf(path []any, format string, args ...any) *DecodeError {
+	return newDecodeError(path, fmt.Errorf(format, args...))
 }
 
 // Unwrap returns the underlying error.
-func (e *EncodeError) Unwrap() error { return e.Err }
+func (e *DecodeError) Unwrap() error { return e.Err }
 
 // Error returns the error message.
-func (e *EncodeError) Error() string {
+func (e *DecodeError) Error() string {
 	return fmt.Sprintf("decodini: encode: failed at %s: %s", e.PathString(), e.Err)
 }
 
 // PathSTring returns a dot-separated string representation of the path.
-func (e *EncodeError) PathString() string {
+func (e *DecodeError) PathString() string {
 	path := make([]string, len(e.Path))
 	for i, item := range e.Path {
 		path[i] = fmt.Sprintf("%v", item)
