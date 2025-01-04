@@ -16,6 +16,10 @@ func newEncodeError(path []any, err error) *EncodeError {
 	return &EncodeError{Path: path, Err: err}
 }
 
+func newEncodeErrorf(path []any, format string, args ...any) *EncodeError {
+	return newEncodeError(path, fmt.Errorf(format, args...))
+}
+
 // Unwrap returns the underlying error.
 func (e *EncodeError) Unwrap() error { return e.Err }
 

@@ -30,6 +30,9 @@ func (e *DecodeError) Error() string {
 
 // PathSTring returns a dot-separated string representation of the path.
 func (e *DecodeError) PathString() string {
+	if len(e.Path) == 0 {
+		return "<root>"
+	}
 	path := make([]string, len(e.Path))
 	for i, item := range e.Path {
 		path[i] = fmt.Sprintf("%v", item)

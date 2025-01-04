@@ -404,6 +404,18 @@ func TestDecode(t *testing.T) {
 			a.NoError(err, "should not error")
 			a.Equal(val, dst, "should be equal")
 		})
+
+		t.Run("Map", func(t *testing.T) {
+			t.Skip("TODO")
+
+			a := assert.New(t)
+
+			var dst map[string]any
+			err := DefaultDecode(tr, &dst)
+
+			a.NoError(err, "should not error")
+			a.Equal(val, dst, "should be equal")
+		})
 	})
 
 	t.Run("Slice", func(t *testing.T) {
@@ -459,7 +471,7 @@ func TestDecode(t *testing.T) {
 	})
 
 	t.Run("Map", func(t *testing.T) {
-		val := map[string]int{"foo": 42, "bar": 1337}
+		val := map[string]int{"Foo": 42, "Bar": 1337}
 		tr := DefaultEncode(val)
 
 		t.Run("Interface", func(t *testing.T) {
@@ -476,6 +488,23 @@ func TestDecode(t *testing.T) {
 			a := assert.New(t)
 
 			var dst map[string]int
+			err := DefaultDecode(tr, &dst)
+
+			a.NoError(err, "should not error")
+			a.Equal(val, dst, "should be equal")
+		})
+
+		t.Run("Struct", func(t *testing.T) {
+			t.Skip("TODO")
+
+			type testStruct struct {
+				Foo int
+				Bar int
+			}
+
+			a := assert.New(t)
+
+			var dst testStruct
 			err := DefaultDecode(tr, &dst)
 
 			a.NoError(err, "should not error")
