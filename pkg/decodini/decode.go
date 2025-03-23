@@ -86,7 +86,7 @@ func (d *Decoding) decode(path []any, tr *Tree, dst reflect.Value) error {
 	}
 }
 
-func (d *Decoding) decodeLeaf(path []any, tr *Tree, dst reflect.Value) error {
+func (d *Decoding) decodeLeaf(_ []any, tr *Tree, dst reflect.Value) error {
 	if d.LeafDecoder != nil {
 		fn := d.LeafDecoder(tr, dst)
 		if fn != nil {
@@ -108,6 +108,8 @@ func (d *Decoding) decodeStruct(path []any, tr *Tree, dst reflect.Value) error {
 	switch dst.Kind() {
 	case reflect.Struct, reflect.Interface:
 		return d.decodeStructIntoStruct(path, tr, dst)
+	case reflect.Map:
+		return d.decodeStructIntoMap(path, tr, dst)
 	default:
 		return newDecodeErrorf(path, "decodini: cannot decode struct into %s", dst.Kind())
 	}
@@ -157,6 +159,8 @@ func (d *Decoding) decodeMap(path []any, tr *Tree, dst reflect.Value) error {
 	switch dst.Kind() {
 	case reflect.Map, reflect.Interface:
 		return d.decodeMapIntoMap(path, tr, dst)
+	case reflect.Struct:
+		return d.decodeMapIntoStruct(path, tr, dst)
 	default:
 		return fmt.Errorf("decodini: cannot decode map into %s", dst.Type())
 	}
@@ -193,6 +197,35 @@ func (d *Decoding) decodeStructIntoStruct(
 	}
 
 	dst.Set(created.Elem())
+	return nil
+}
+
+func (d *Decoding) decodeStructIntoMap(
+	path []any,
+	tr *Tree,
+	dst reflect.Value,
+) error {
+	var typ reflect.Type
+	if dst.Kind() == reflect.Interface {
+		typ = tr.Value.Type()
+	} else {
+		typ = dst.Type()
+	}
+	created := reflect.MakeMapWithSize(typ, len(tr.Children))
+
+	for _, child := range tr.Children {
+		key := reflect.ValueOf(child.Name)
+
+		val := reflect.New(typ.Elem()).Elem()
+		err := d.decode(append(path, child.Name), child, val)
+		if err != nil {
+			return err
+		}
+
+		created.SetMapIndex(key, val)
+	}
+
+	dst.Set(created)
 	return nil
 }
 
@@ -241,6 +274,38 @@ func (d *Decoding) decodeMapIntoMap(
 		}
 
 		created.SetMapIndex(key, val)
+	}
+
+	dst.Set(created)
+	return nil
+}
+
+func (d *Decoding) decodeMapIntoStruct(
+	path []any,
+	tr *Tree,
+	dst reflect.Value,
+) error {
+	var typ reflect.Type
+	if dst.Kind() == reflect.Interface {
+		typ = tr.Value.Type()
+	} else {
+		typ = dst.Type()
+	}
+	created := reflect.New(typ).Elem()
+
+	for _, child := range tr.Children {
+		field := created.FieldByName(fmt.Sprint(child.Name))
+		if !field.IsValid() {
+			return fmt.Errorf("no such field: %s in %s", child.Name, typ)
+		}
+
+		val := reflect.New(field.Type()).Elem()
+		err := d.decode(append(path, child.Name), child, val)
+		if err != nil {
+			return err
+		}
+
+		field.Set(val)
 	}
 
 	dst.Set(created)
