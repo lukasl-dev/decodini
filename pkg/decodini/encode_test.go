@@ -12,7 +12,7 @@ func TestEncode(t *testing.T) {
 	t.Run("Nil", func(t *testing.T) {
 		a := assert.New(t)
 
-		tr := DefaultEncode(nil)
+		tr := Encode(nil, nil)
 
 		a.True(tr.Leaf(), "should be leaf")
 		a.True(tr.Nil(), "should be nil")
@@ -22,7 +22,7 @@ func TestEncode(t *testing.T) {
 		a := assert.New(t)
 
 		val := "test"
-		tr := DefaultEncode(val)
+		tr := Encode(nil, val)
 
 		a.True(tr.Leaf(), "should be leaf")
 		a.Equal(val, tr.Value.String())
@@ -32,7 +32,7 @@ func TestEncode(t *testing.T) {
 		a := assert.New(t)
 
 		val := bool(true)
-		tr := DefaultEncode(val)
+		tr := Encode(nil, val)
 
 		a.True(tr.Leaf(), "should be leaf")
 		a.Equal(val, tr.Value.Bool())
@@ -42,7 +42,7 @@ func TestEncode(t *testing.T) {
 		a := assert.New(t)
 
 		val := int(42)
-		tr := DefaultEncode(val)
+		tr := Encode(nil, val)
 
 		a.True(tr.Leaf(), "should be leaf")
 		a.Equal(val, int(tr.Value.Int()))
@@ -52,7 +52,7 @@ func TestEncode(t *testing.T) {
 		a := assert.New(t)
 
 		val := int8(42)
-		tr := DefaultEncode(val)
+		tr := Encode(nil, val)
 
 		a.True(tr.Leaf(), "should be leaf")
 		a.Equal(val, int8(tr.Value.Int()))
@@ -62,7 +62,7 @@ func TestEncode(t *testing.T) {
 		a := assert.New(t)
 
 		val := int16(42)
-		tr := DefaultEncode(val)
+		tr := Encode(nil, val)
 
 		a.True(tr.Leaf(), "should be leaf")
 		a.Equal(val, int16(tr.Value.Int()))
@@ -72,7 +72,7 @@ func TestEncode(t *testing.T) {
 		a := assert.New(t)
 
 		val := int32(42)
-		tr := DefaultEncode(val)
+		tr := Encode(nil, val)
 
 		a.True(tr.Leaf(), "should be leaf")
 		a.Equal(val, int32(tr.Value.Int()))
@@ -82,7 +82,7 @@ func TestEncode(t *testing.T) {
 		a := assert.New(t)
 
 		val := int64(42)
-		tr := DefaultEncode(val)
+		tr := Encode(nil, val)
 
 		a.True(tr.Leaf(), "should be leaf")
 		a.Equal(val, int64(tr.Value.Int()))
@@ -92,7 +92,7 @@ func TestEncode(t *testing.T) {
 		a := assert.New(t)
 
 		val := uint(42)
-		tr := DefaultEncode(val)
+		tr := Encode(nil, val)
 
 		a.True(tr.Leaf(), "should be leaf")
 		a.Equal(val, uint(tr.Value.Uint()))
@@ -102,7 +102,7 @@ func TestEncode(t *testing.T) {
 		a := assert.New(t)
 
 		val := uint8(42)
-		tr := DefaultEncode(val)
+		tr := Encode(nil, val)
 
 		a.True(tr.Leaf(), "should be leaf")
 		a.Equal(val, uint8(tr.Value.Uint()))
@@ -112,7 +112,7 @@ func TestEncode(t *testing.T) {
 		a := assert.New(t)
 
 		val := uint16(42)
-		tr := DefaultEncode(val)
+		tr := Encode(nil, val)
 
 		a.True(tr.Leaf(), "should be leaf")
 		a.Equal(val, uint16(tr.Value.Uint()))
@@ -122,7 +122,7 @@ func TestEncode(t *testing.T) {
 		a := assert.New(t)
 
 		val := uint32(42)
-		tr := DefaultEncode(val)
+		tr := Encode(nil, val)
 
 		a.True(tr.Leaf(), "should be leaf")
 		a.Equal(val, uint32(tr.Value.Uint()))
@@ -132,7 +132,7 @@ func TestEncode(t *testing.T) {
 		a := assert.New(t)
 
 		val := uint64(42)
-		tr := DefaultEncode(val)
+		tr := Encode(nil, val)
 
 		a.True(tr.Leaf(), "should be leaf")
 		a.Equal(val, uint64(tr.Value.Uint()))
@@ -142,7 +142,7 @@ func TestEncode(t *testing.T) {
 		a := assert.New(t)
 
 		val := float32(42)
-		tr := DefaultEncode(val)
+		tr := Encode(nil, val)
 
 		a.True(tr.Leaf(), "should be leaf")
 		a.Equal(val, float32(tr.Value.Float()))
@@ -152,7 +152,7 @@ func TestEncode(t *testing.T) {
 		a := assert.New(t)
 
 		val := float64(42)
-		tr := DefaultEncode(val)
+		tr := Encode(nil, val)
 
 		a.True(tr.Leaf(), "should be leaf")
 		a.Equal(val, float64(tr.Value.Float()))
@@ -162,7 +162,7 @@ func TestEncode(t *testing.T) {
 		a := assert.New(t)
 
 		val := "test"
-		tr := DefaultEncode(&val)
+		tr := Encode(nil, &val)
 
 		a.True(tr.Leaf(), "should be leaf")
 		a.Equal(val, tr.Value.String())
@@ -182,7 +182,7 @@ func TestEncode(t *testing.T) {
 			A: "test",
 			B: struct{ C int }{C: 42},
 		}
-		tr := DefaultEncode(val)
+		tr := Encode(nil, val)
 
 		a.False(tr.Leaf(), "should not be leaf")
 		a.Equal(val, tr.Value.Interface())
@@ -207,7 +207,7 @@ func TestEncode(t *testing.T) {
 			B: 42,
 			C: 1337,
 		}
-		tr := DefaultEncode(val)
+		tr := Encode(nil, val)
 
 		a.False(tr.Leaf(), "should not be leaf")
 
@@ -221,7 +221,7 @@ func TestEncode(t *testing.T) {
 		a := assert.New(t)
 
 		val := []string{"foo", "bar"}
-		tr := DefaultEncode(val)
+		tr := Encode(nil, val)
 
 		a.False(tr.Leaf(), "should not be leaf")
 		a.Equal(val, tr.Value.Interface())
@@ -235,7 +235,7 @@ func TestEncode(t *testing.T) {
 		a := assert.New(t)
 
 		val := [2]string{"foo", "bar"}
-		tr := DefaultEncode(val)
+		tr := Encode(nil, val)
 
 		a.False(tr.Leaf(), "should not be leaf")
 		a.Equal(val, tr.Value.Interface())
@@ -249,7 +249,7 @@ func TestEncode(t *testing.T) {
 		a := assert.New(t)
 
 		val := map[string]int{"foo": 42, "bar": 1337}
-		tr := DefaultEncode(val)
+		tr := Encode(nil, val)
 
 		a.False(tr.Leaf(), "should not be leaf")
 		a.Equal(val, tr.Value.Interface())

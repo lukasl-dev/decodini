@@ -25,7 +25,7 @@ func (e *DecodeError) Unwrap() error { return e.Err }
 
 // Error returns the error message.
 func (e *DecodeError) Error() string {
-	return fmt.Sprintf("decodini: encode: failed at %s: %s", e.PathString(), e.Err)
+	return fmt.Sprintf("decodini: decode: failed at %s: %s", e.PathString(), e.Err)
 }
 
 // PathSTring returns a dot-separated string representation of the path.

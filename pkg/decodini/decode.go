@@ -47,20 +47,16 @@ func Decode(dec *Decoding, tr *Tree, dst any) error {
 	return dec.decode(nil, tr, rVal)
 }
 
-func DefaultDecode(tr *Tree, dst any) error {
-	return Decode(nil, tr, dst)
-}
-
 func (d *Decoding) decode(path []any, tr *Tree, dst reflect.Value) error {
 	if tr == nil {
-		return newDecodeErrorf(path, "decodini: cannot decode nil tree")
+		return newDecodeErrorf(path, "cannot decode nil tree")
 	}
 
 	if dst.Kind() == reflect.Ptr {
 		return d.decode(path, tr, dst.Elem())
 	}
 	if !dst.CanSet() {
-		return newDecodeErrorf(path, "decodini: cannot decode into unsettable value")
+		return newDecodeErrorf(path, "cannot decode into unsettable value")
 	}
 
 	if tr.Nil() {
@@ -82,7 +78,7 @@ func (d *Decoding) decode(path []any, tr *Tree, dst reflect.Value) error {
 		return d.decodeMap(path, tr, dst)
 	// TODO: pointers
 	default:
-		return fmt.Errorf("decodini: cannot decode into %s", dst.Type())
+		return newDecodeErrorf(path, "cannot decode %s", dst.Type())
 	}
 }
 
@@ -111,7 +107,7 @@ func (d *Decoding) decodeStruct(path []any, tr *Tree, dst reflect.Value) error {
 	case reflect.Map:
 		return d.decodeStructIntoMap(path, tr, dst)
 	default:
-		return newDecodeErrorf(path, "decodini: cannot decode struct into %s", dst.Kind())
+		return newDecodeErrorf(path, "cannot decode struct into %s", dst.Kind())
 	}
 }
 
@@ -127,7 +123,7 @@ func (d *Decoding) decodeSlice(path []any, tr *Tree, dst reflect.Value) error {
 	case reflect.Slice, reflect.Interface:
 		return d.decodeSliceIntoSlice(path, tr, dst)
 	default:
-		return fmt.Errorf("decodini: cannot decode slice into %s", dst.Type())
+		return newDecodeErrorf(path, "cannot decode slice into %s", dst.Type())
 	}
 }
 
@@ -144,7 +140,7 @@ func (d *Decoding) decodeArray(path []any, tr *Tree, dst reflect.Value) error {
 	// case reflect.Array, reflect.Interface:
 	// 	return d.decodeArrayIntoArray(tr, dst)
 	default:
-		return fmt.Errorf("decodini: cannot decode array into %s", dst.Type())
+		return newDecodeErrorf(path, "cannot decode array into %s", dst.Type())
 	}
 }
 
@@ -162,7 +158,7 @@ func (d *Decoding) decodeMap(path []any, tr *Tree, dst reflect.Value) error {
 	case reflect.Struct:
 		return d.decodeMapIntoStruct(path, tr, dst)
 	default:
-		return fmt.Errorf("decodini: cannot decode map into %s", dst.Type())
+		return newDecodeErrorf(path, "cannot decode map into %s", dst.Type())
 	}
 }
 
@@ -182,13 +178,13 @@ func (d *Decoding) decodeStructIntoStruct(
 	for _, child := range tr.Children {
 		name, isString := child.Name.(string)
 		if !isString {
-			return fmt.Errorf("decodini: struct fields must be strings, but got %T", name)
+			return newDecodeErrorf(path, "struct fields must be strings, but got %T", name)
 		}
 
 		_, field := d.structFieldByName(created.Elem(), name)
 		if !field.IsValid() {
 			// TODO: allow ignoring fields
-			return fmt.Errorf("decodini: struct field %s does not exist", name)
+			return newDecodeErrorf(path, "struct field %s does not exist", name)
 		}
 
 		if err := d.decode(append(path, name), child, field); err != nil {
@@ -294,18 +290,18 @@ func (d *Decoding) decodeMapIntoStruct(
 	created := reflect.New(typ).Elem()
 
 	for _, child := range tr.Children {
-		field := created.FieldByName(fmt.Sprint(child.Name))
-		if !field.IsValid() {
-			return fmt.Errorf("no such field: %s in %s", child.Name, typ)
+		_, vf := d.structFieldByName(created, fmt.Sprint(child.Name))
+		if !vf.IsValid() {
+			return newDecodeErrorf(path, "no such field: %s in %s", child.Name, typ)
 		}
 
-		val := reflect.New(field.Type()).Elem()
+		val := reflect.New(vf.Type()).Elem()
 		err := d.decode(append(path, child.Name), child, val)
 		if err != nil {
 			return err
 		}
 
-		field.Set(val)
+		vf.Set(val)
 	}
 
 	dst.Set(created)

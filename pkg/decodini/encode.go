@@ -28,10 +28,6 @@ func Encode(enc *Encoding, val any) *Tree {
 	return enc.encode(nil, rVal)
 }
 
-func DefaultEncode(val any) *Tree {
-	return Encode(nil, val)
-}
-
 func (e *Encoding) encode(name any, val reflect.Value) *Tree {
 	switch val.Kind() {
 	case reflect.Ptr:

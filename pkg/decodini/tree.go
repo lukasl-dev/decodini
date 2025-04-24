@@ -16,7 +16,7 @@ func NewTree(name any, value reflect.Value, children ...*Tree) *Tree {
 }
 
 func NewRootTree(value reflect.Value, children ...*Tree) *Tree {
-	return NewTree(reflect.Value{}, value, children...)
+	return NewTree(nil, value, children...)
 }
 
 // Root returns whether the tree is a root node.
