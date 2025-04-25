@@ -42,7 +42,7 @@ func (t *Tree) IsStructField() bool {
 }
 
 // StructField returns the struct field. If the tree does not represent a struct
-// field (i.e. IsStructField() is false), the returned value is nil.
+// field (i.e. IsStructField() is false), it panics.
 func (t *Tree) StructField() reflect.StructField {
 	if !t.IsStructField() {
 		panic("decodini: tree does not represent a struct field")
