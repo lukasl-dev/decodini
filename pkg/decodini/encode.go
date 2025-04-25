@@ -28,27 +28,27 @@ func Encode(enc *Encoding, val any) *Tree {
 	return enc.encode(nil, rVal)
 }
 
-func (e *Encoding) encode(name any, val reflect.Value) *Tree {
+func (e *Encoding) encode(path []any, val reflect.Value) *Tree {
 	switch val.Kind() {
 	case reflect.Ptr:
-		return e.encode(name, val.Elem())
+		return e.encode(path, val.Elem())
 	case reflect.Struct:
-		return e.encodeStruct(name, val)
+		return e.encodeStruct(path, val)
 	case reflect.Slice, reflect.Array:
-		return e.encodeSlice(name, val)
+		return e.encodeSlice(path, val)
 	case reflect.Map:
-		return e.encodeMap(name, val)
+		return e.encodeMap(path, val)
 	case reflect.Invalid, reflect.String, reflect.Bool,
 		reflect.Float32, reflect.Float64,
 		reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
 		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		return e.encodeScalar(name, val)
+		return e.encodeScalar(path, val)
 	default:
 		panic(fmt.Sprintf("unsupported kind %s", val.Kind()))
 	}
 }
 
-func (e *Encoding) encodeStruct(name any, val reflect.Value) *Tree {
+func (e *Encoding) encodeStruct(path []any, val reflect.Value) *Tree {
 	typ := val.Type()
 	var children []*Tree
 	for i := 0; i < val.NumField(); i++ {
@@ -66,29 +66,29 @@ func (e *Encoding) encodeStruct(name any, val reflect.Value) *Tree {
 			name = tag
 		}
 
-		enc := e.encode(name, vf)
+		enc := e.encode(append(path, name), vf)
 		enc.structField = tf
 		children = append(children, enc)
 	}
-	return NewTree(name, val, children...)
+	return NewTree(path, val, children...)
 }
 
-func (e *Encoding) encodeSlice(name any, val reflect.Value) *Tree {
+func (e *Encoding) encodeSlice(path []any, val reflect.Value) *Tree {
 	var children []*Tree
 	for i := 0; i < val.Len(); i++ {
-		children = append(children, e.encode(i, val.Index(i)))
+		children = append(children, e.encode(append(path, i), val.Index(i)))
 	}
-	return NewTree(name, val, children...)
+	return NewTree(path, val, children...)
 }
 
-func (e *Encoding) encodeMap(name any, val reflect.Value) *Tree {
+func (e *Encoding) encodeMap(path []any, val reflect.Value) *Tree {
 	var children []*Tree
 	for _, key := range val.MapKeys() {
-		children = append(children, e.encode(key.Interface(), val.MapIndex(key)))
+		children = append(children, e.encode(append(path, key.Interface()), val.MapIndex(key)))
 	}
-	return NewTree(name, val, children...)
+	return NewTree(path, val, children...)
 }
 
-func (e *Encoding) encodeScalar(name any, val reflect.Value) *Tree {
-	return NewTree(name, val)
+func (e *Encoding) encodeScalar(path []any, val reflect.Value) *Tree {
+	return NewTree(path, val)
 }

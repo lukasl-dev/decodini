@@ -24,8 +24,8 @@ func TestDepthFirst(t *testing.T) {
 
 		tree := &Tree{
 			Children: []*Tree{
-				NewTree(reflect.ValueOf("child1"), reflect.ValueOf(0)),
-				NewTree(reflect.ValueOf("child2"), reflect.ValueOf(0)),
+				NewTree([]any{reflect.ValueOf("child1")}, reflect.ValueOf(0)),
+				NewTree([]any{reflect.ValueOf("child2")}, reflect.ValueOf(0)),
 			},
 		}
 

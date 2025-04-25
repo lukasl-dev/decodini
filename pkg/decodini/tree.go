@@ -6,7 +6,6 @@ import (
 )
 
 type Tree struct {
-	Name     any
 	Path     []any
 	Value    reflect.Value
 	Children []*Tree
@@ -14,17 +13,24 @@ type Tree struct {
 	structField reflect.StructField
 }
 
-func NewTree(name any, value reflect.Value, children ...*Tree) *Tree {
-	return &Tree{Name: name, Value: value, Children: children}
+func NewTree(path []any, value reflect.Value, children ...*Tree) *Tree {
+	return &Tree{Path: path, Value: value, Children: children}
 }
 
 func NewRootTree(value reflect.Value, children ...*Tree) *Tree {
 	return NewTree(nil, value, children...)
 }
 
+func (t *Tree) Name() any {
+	if len(t.Path) == 0 {
+		return nil
+	}
+	return t.Path[len(t.Path)-1]
+}
+
 // IsRoot returns whether the tree is a root node.
 func (t *Tree) IsRoot() bool {
-	return t.Name == nil
+	return len(t.Path) == 0
 }
 
 // IsLeaf returns whether the tree is a leaf node.
@@ -55,7 +61,7 @@ func (t *Tree) StructField() reflect.StructField {
 // child tree matches the given name, the returned value is nil.
 func (t *Tree) Child(name any) *Tree {
 	for _, child := range t.Children {
-		if child.Name == name {
+		if child.Name() == name {
 			return child
 		}
 	}

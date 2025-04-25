@@ -1,9 +1,6 @@
 package decodini
 
-import (
-	"fmt"
-	"reflect"
-)
+import "reflect"
 
 type Decoder interface {
 	Decode(tr *Tree, target DecodeTarget) error
@@ -118,10 +115,6 @@ func (d *Decoding) decode(path []any, tr *Tree, target DecodeTarget) error {
 		return nil
 	}
 
-	if tr.IsLeaf() {
-		return d.decodeLeaf(path, tr, target)
-	}
-
 	if d.Decoder != nil {
 		// if custom decoder is specified
 		dec := d.Decoder(tr, target)
@@ -130,223 +123,23 @@ func (d *Decoding) decode(path []any, tr *Tree, target DecodeTarget) error {
 		}
 	}
 
+	if tr.IsLeaf() {
+		return NewLeafDecoder(d).Decode(tr, target)
+	}
+
 	switch tr.Value.Kind() {
 	case reflect.Struct:
-		return d.decodeStruct(path, tr, target)
+		return NewStructDecoder(d).Decode(tr, target)
 	case reflect.Slice:
-		return d.decodeSlice(path, tr, target)
+		return NewSliceDecoder(d).Decode(tr, target)
 	case reflect.Array:
-		return d.decodeArray(path, tr, target)
+		return NewArrayDecoder(d).Decode(tr, target)
 	case reflect.Map:
-		return d.decodeMap(path, tr, target)
+		return NewMapDecoder(d).Decode(tr, target)
 	// TODO: pointers
 	default:
 		return newDecodeErrorf(path, "cannot decode %s", target.Value.Type())
 	}
-}
-
-func (d *Decoding) decodeLeaf(_ []any, tr *Tree, target DecodeTarget) error {
-	if d.Decoder != nil {
-		dec := d.Decoder(tr, target)
-		if dec != nil {
-			return dec.Decode(tr, target)
-		}
-	}
-	target.Value.Set(tr.Value)
-	return nil
-}
-
-func (d *Decoding) decodeStruct(path []any, tr *Tree, target DecodeTarget) error {
-	switch target.Value.Kind() {
-	case reflect.Struct, reflect.Interface:
-		return d.decodeStructIntoStruct(path, tr, target)
-	case reflect.Map:
-		return d.decodeStructIntoMap(path, tr, target)
-	default:
-		return newDecodeErrorf(path, "cannot decode struct into %s", target.Value.Kind())
-	}
-}
-
-func (d *Decoding) decodeSlice(path []any, tr *Tree, target DecodeTarget) error {
-	switch target.Value.Kind() {
-	case reflect.Slice, reflect.Interface:
-		return d.decodeSliceIntoSlice(path, tr, target)
-	default:
-		return newDecodeErrorf(path, "cannot decode slice into %s", target.Value.Type())
-	}
-}
-
-func (d *Decoding) decodeArray(path []any, tr *Tree, target DecodeTarget) error {
-	switch target.Value.Kind() {
-	// TODO: implement
-	// case reflect.Array, reflect.Interface:
-	// 	return d.decodeArrayIntoArray(tr, dst)
-	default:
-		return newDecodeErrorf(path, "cannot decode array into %s", target.Value.Type())
-	}
-}
-
-func (d *Decoding) decodeMap(path []any, tr *Tree, target DecodeTarget) error {
-	switch target.Value.Kind() {
-	case reflect.Map, reflect.Interface:
-		return d.decodeMapIntoMap(path, tr, target)
-	case reflect.Struct:
-		return d.decodeMapIntoStruct(path, tr, target)
-	default:
-		return newDecodeErrorf(path, "cannot decode map into %s", target.Value.Type())
-	}
-}
-
-func (d *Decoding) decodeStructIntoStruct(
-	path []any,
-	tr *Tree,
-	target DecodeTarget,
-) error {
-	var typ reflect.Type
-	if target.Value.Kind() == reflect.Interface {
-		typ = tr.Value.Type()
-	} else {
-		typ = target.Value.Type()
-	}
-	created := reflect.New(typ)
-
-	for _, child := range tr.Children {
-		name, isString := child.Name.(string)
-		if !isString {
-			return newDecodeErrorf(path, "struct fields must be strings, but got %T", name)
-		}
-
-		sf, field := d.structFieldByName(created.Elem(), name)
-		if !field.IsValid() {
-			// TODO: allow ignoring fields
-			return newDecodeErrorf(path, "struct field %s does not exist", name)
-		}
-
-		subtarget := DecodeTarget{Value: field, structField: sf}
-		if err := d.decode(append(path, name), child, subtarget); err != nil {
-			return err
-		}
-	}
-
-	target.Value.Set(created.Elem())
-	return nil
-}
-
-func (d *Decoding) decodeStructIntoMap(
-	path []any,
-	tr *Tree,
-	target DecodeTarget,
-) error {
-	var typ reflect.Type
-	if target.Value.Kind() == reflect.Interface {
-		typ = tr.Value.Type()
-	} else {
-		typ = target.Value.Type()
-	}
-	created := reflect.MakeMapWithSize(typ, len(tr.Children))
-
-	for _, child := range tr.Children {
-		key := reflect.ValueOf(child.Name)
-		val := reflect.New(typ.Elem()).Elem()
-
-		subtarget := DecodeTarget{Value: val, mapKey: key}
-		err := d.decode(append(path, child.Name), child, subtarget)
-		if err != nil {
-			return err
-		}
-
-		created.SetMapIndex(key, val)
-	}
-
-	target.Value.Set(created)
-	return nil
-}
-
-func (d *Decoding) decodeSliceIntoSlice(
-	path []any,
-	tr *Tree,
-	target DecodeTarget,
-) error {
-	var typ reflect.Type
-	if target.Value.Kind() == reflect.Interface {
-		typ = tr.Value.Type()
-	} else {
-		typ = target.Value.Type()
-	}
-	created := reflect.MakeSlice(typ, len(tr.Children), len(tr.Children))
-
-	for i, child := range tr.Children {
-		subtarget := DecodeTarget{Value: created.Index(i), sliceIndex: &i}
-		if err := d.decode(append(path, i), child, subtarget); err != nil {
-			return err
-		}
-	}
-	target.Value.Set(created)
-	return nil
-}
-
-func (d *Decoding) decodeMapIntoMap(
-	path []any,
-	tr *Tree,
-	target DecodeTarget,
-) error {
-	var typ reflect.Type
-	if target.Value.Kind() == reflect.Interface {
-		typ = tr.Value.Type()
-	} else {
-		typ = target.Value.Type()
-	}
-	created := reflect.MakeMapWithSize(typ, len(tr.Children))
-
-	for _, child := range tr.Children {
-		key := reflect.ValueOf(child.Name)
-		val := reflect.New(typ.Elem()).Elem()
-
-		target := DecodeTarget{Value: val, mapKey: key}
-		err := d.decode(append(path, child.Name), child, target)
-		if err != nil {
-			return err
-		}
-
-		created.SetMapIndex(key, val)
-	}
-
-	target.Value.Set(created)
-	return nil
-}
-
-func (d *Decoding) decodeMapIntoStruct(
-	path []any,
-	tr *Tree,
-	target DecodeTarget,
-) error {
-	var typ reflect.Type
-	if target.Value.Kind() == reflect.Interface {
-		typ = tr.Value.Type()
-	} else {
-		typ = target.Value.Type()
-	}
-	created := reflect.New(typ).Elem()
-
-	for _, child := range tr.Children {
-		sf, vf := d.structFieldByName(created, fmt.Sprint(child.Name))
-		if !vf.IsValid() {
-			return newDecodeErrorf(path, "no such field: %s in %s", child.Name, typ)
-		}
-
-		val := reflect.New(vf.Type()).Elem()
-
-		subtarget := DecodeTarget{Value: val, structField: sf}
-		err := d.decode(append(path, child.Name), child, subtarget)
-		if err != nil {
-			return err
-		}
-
-		vf.Set(val)
-	}
-
-	target.Value.Set(created)
-	return nil
 }
 
 func (d *Decoding) structFieldByName(
