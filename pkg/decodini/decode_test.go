@@ -552,3 +552,22 @@ func TestDecode_Map(t *testing.T) {
 		a.Equal(exp, dst, "should be equal")
 	})
 }
+
+func TestDecode_EmptyMap(t *testing.T) {
+	t.Parallel()
+
+	val := map[string]int{}
+	tr := Encode(nil, val)
+
+	t.Run("Interface", func(t *testing.T) {
+		a := assert.New(t)
+
+		type testStruct struct{}
+
+		var dst testStruct
+		err := Decode(nil, tr, &dst)
+
+		a.NoError(err, "should not error")
+		a.Equal(testStruct{}, dst, "should be equal")
+	})
+}

@@ -12,7 +12,7 @@ func NewLeafDecoder(dec *Decoding) Decoder {
 }
 
 func (d *LeafDecoder) Decode(tr *Tree, target DecodeTarget) error {
-	if !tr.IsLeaf() {
+	if !tr.IsPrimitive() {
 		return newDecodeErrorf(
 			tr.Path,
 			"leaf decoder can't decode non-leaf %s", tr.Value.Kind(),

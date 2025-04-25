@@ -123,7 +123,7 @@ func (d *Decoding) decode(path []any, tr *Tree, target DecodeTarget) error {
 		}
 	}
 
-	if tr.IsLeaf() {
+	if tr.IsPrimitive() {
 		return NewLeafDecoder(d).Decode(tr, target)
 	}
 

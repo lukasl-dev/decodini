@@ -33,9 +33,21 @@ func (t *Tree) IsRoot() bool {
 	return len(t.Path) == 0
 }
 
-// IsLeaf returns whether the tree is a leaf node.
+// IsLeaf returns whether the tree is a leaf node. A leaf node is a node
+// that does not have any children.
 func (t *Tree) IsLeaf() bool {
 	return len(t.Children) == 0
+}
+
+// IsPrimitive returns whether the tree is a primitive node, i.e. int, bool,
+// string, etc.
+func (t *Tree) IsPrimitive() bool {
+	switch t.Value.Kind() {
+	case reflect.Array, reflect.Slice, reflect.Map, reflect.Struct:
+		return false
+	default:
+		return len(t.Children) == 0
+	}
 }
 
 // IsNil returns whether the tree's value is nil.
