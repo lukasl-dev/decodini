@@ -85,7 +85,17 @@ func Decode(dec *Decoding, tr *Tree, dst any) error {
 	if dec == nil {
 		dec = &defaultDecoding
 	}
-	rVal := reflect.ValueOf(dst)
+
+	var rVal reflect.Value
+	switch v := dst.(type) {
+	case reflect.Value:
+		if v.CanSet() {
+			rVal = v
+		}
+	default:
+		rVal = reflect.ValueOf(dst)
+	}
+
 	return dec.decode(nil, tr, DecodeTarget{Value: rVal})
 }
 
