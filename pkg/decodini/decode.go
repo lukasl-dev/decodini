@@ -59,12 +59,12 @@ func (d *Decoding) decode(path []any, tr *Tree, dst reflect.Value) error {
 		return newDecodeErrorf(path, "cannot decode into unsettable value")
 	}
 
-	if tr.Nil() {
+	if tr.IsNil() {
 		dst.Set(reflect.Zero(dst.Type()))
 		return nil
 	}
 
-	if tr.Leaf() {
+	if tr.IsLeaf() {
 		return d.decodeLeaf(path, tr, dst)
 	}
 	switch tr.Value.Kind() {

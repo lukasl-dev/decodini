@@ -9,6 +9,8 @@ type Tree struct {
 	Name     any
 	Value    reflect.Value
 	Children []*Tree
+
+	structField reflect.StructField
 }
 
 func NewTree(name any, value reflect.Value, children ...*Tree) *Tree {
@@ -19,21 +21,37 @@ func NewRootTree(value reflect.Value, children ...*Tree) *Tree {
 	return NewTree(nil, value, children...)
 }
 
-// Root returns whether the tree is a root node.
-func (t *Tree) Root() bool {
+// IsRoot returns whether the tree is a root node.
+func (t *Tree) IsRoot() bool {
 	return t.Name == nil
 }
 
-// Leaf returns whether the tree is a leaf node.
-func (t *Tree) Leaf() bool {
+// IsLeaf returns whether the tree is a leaf node.
+func (t *Tree) IsLeaf() bool {
 	return len(t.Children) == 0
 }
 
-// Nil returns whether the tree's value is nil.
-func (t *Tree) Nil() bool {
+// IsNil returns whether the tree's value is nil.
+func (t *Tree) IsNil() bool {
 	return t.Value == reflect.Value{}
 }
 
+// IsStructField returns whether the tree represents a struct field.
+func (t *Tree) IsStructField() bool {
+	return t.structField.Name != ""
+}
+
+// StructField returns the struct field. If the tree does not represent a struct
+// field (i.e. IsStructField() is false), the returned value is nil.
+func (t *Tree) StructField() reflect.StructField {
+	if !t.IsStructField() {
+		panic("decodini: tree does not represent a struct field")
+	}
+	return t.structField
+}
+
+// Child returns the child tree that matches the given name exactly. If no
+// child tree matches the given name, the returned value is nil.
 func (t *Tree) Child(name any) *Tree {
 	for _, child := range t.Children {
 		if child.Name == name {

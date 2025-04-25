@@ -14,8 +14,8 @@ func TestEncode(t *testing.T) {
 
 		tr := Encode(nil, nil)
 
-		a.True(tr.Leaf(), "should be leaf")
-		a.True(tr.Nil(), "should be nil")
+		a.True(tr.IsLeaf(), "should be leaf")
+		a.True(tr.IsNil(), "should be nil")
 	})
 
 	t.Run("String", func(t *testing.T) {
@@ -24,7 +24,7 @@ func TestEncode(t *testing.T) {
 		val := "test"
 		tr := Encode(nil, val)
 
-		a.True(tr.Leaf(), "should be leaf")
+		a.True(tr.IsLeaf(), "should be leaf")
 		a.Equal(val, tr.Value.String())
 	})
 
@@ -34,7 +34,7 @@ func TestEncode(t *testing.T) {
 		val := bool(true)
 		tr := Encode(nil, val)
 
-		a.True(tr.Leaf(), "should be leaf")
+		a.True(tr.IsLeaf(), "should be leaf")
 		a.Equal(val, tr.Value.Bool())
 	})
 
@@ -44,7 +44,7 @@ func TestEncode(t *testing.T) {
 		val := int(42)
 		tr := Encode(nil, val)
 
-		a.True(tr.Leaf(), "should be leaf")
+		a.True(tr.IsLeaf(), "should be leaf")
 		a.Equal(val, int(tr.Value.Int()))
 	})
 
@@ -54,7 +54,7 @@ func TestEncode(t *testing.T) {
 		val := int8(42)
 		tr := Encode(nil, val)
 
-		a.True(tr.Leaf(), "should be leaf")
+		a.True(tr.IsLeaf(), "should be leaf")
 		a.Equal(val, int8(tr.Value.Int()))
 	})
 
@@ -64,7 +64,7 @@ func TestEncode(t *testing.T) {
 		val := int16(42)
 		tr := Encode(nil, val)
 
-		a.True(tr.Leaf(), "should be leaf")
+		a.True(tr.IsLeaf(), "should be leaf")
 		a.Equal(val, int16(tr.Value.Int()))
 	})
 
@@ -74,7 +74,7 @@ func TestEncode(t *testing.T) {
 		val := int32(42)
 		tr := Encode(nil, val)
 
-		a.True(tr.Leaf(), "should be leaf")
+		a.True(tr.IsLeaf(), "should be leaf")
 		a.Equal(val, int32(tr.Value.Int()))
 	})
 
@@ -84,7 +84,7 @@ func TestEncode(t *testing.T) {
 		val := int64(42)
 		tr := Encode(nil, val)
 
-		a.True(tr.Leaf(), "should be leaf")
+		a.True(tr.IsLeaf(), "should be leaf")
 		a.Equal(val, int64(tr.Value.Int()))
 	})
 
@@ -94,7 +94,7 @@ func TestEncode(t *testing.T) {
 		val := uint(42)
 		tr := Encode(nil, val)
 
-		a.True(tr.Leaf(), "should be leaf")
+		a.True(tr.IsLeaf(), "should be leaf")
 		a.Equal(val, uint(tr.Value.Uint()))
 	})
 
@@ -104,7 +104,7 @@ func TestEncode(t *testing.T) {
 		val := uint8(42)
 		tr := Encode(nil, val)
 
-		a.True(tr.Leaf(), "should be leaf")
+		a.True(tr.IsLeaf(), "should be leaf")
 		a.Equal(val, uint8(tr.Value.Uint()))
 	})
 
@@ -114,7 +114,7 @@ func TestEncode(t *testing.T) {
 		val := uint16(42)
 		tr := Encode(nil, val)
 
-		a.True(tr.Leaf(), "should be leaf")
+		a.True(tr.IsLeaf(), "should be leaf")
 		a.Equal(val, uint16(tr.Value.Uint()))
 	})
 
@@ -124,7 +124,7 @@ func TestEncode(t *testing.T) {
 		val := uint32(42)
 		tr := Encode(nil, val)
 
-		a.True(tr.Leaf(), "should be leaf")
+		a.True(tr.IsLeaf(), "should be leaf")
 		a.Equal(val, uint32(tr.Value.Uint()))
 	})
 
@@ -134,7 +134,7 @@ func TestEncode(t *testing.T) {
 		val := uint64(42)
 		tr := Encode(nil, val)
 
-		a.True(tr.Leaf(), "should be leaf")
+		a.True(tr.IsLeaf(), "should be leaf")
 		a.Equal(val, uint64(tr.Value.Uint()))
 	})
 
@@ -144,7 +144,7 @@ func TestEncode(t *testing.T) {
 		val := float32(42)
 		tr := Encode(nil, val)
 
-		a.True(tr.Leaf(), "should be leaf")
+		a.True(tr.IsLeaf(), "should be leaf")
 		a.Equal(val, float32(tr.Value.Float()))
 	})
 
@@ -154,7 +154,7 @@ func TestEncode(t *testing.T) {
 		val := float64(42)
 		tr := Encode(nil, val)
 
-		a.True(tr.Leaf(), "should be leaf")
+		a.True(tr.IsLeaf(), "should be leaf")
 		a.Equal(val, float64(tr.Value.Float()))
 	})
 
@@ -164,7 +164,7 @@ func TestEncode(t *testing.T) {
 		val := "test"
 		tr := Encode(nil, &val)
 
-		a.True(tr.Leaf(), "should be leaf")
+		a.True(tr.IsLeaf(), "should be leaf")
 		a.Equal(val, tr.Value.String())
 	})
 
@@ -184,13 +184,22 @@ func TestEncode(t *testing.T) {
 		}
 		tr := Encode(nil, val)
 
-		a.False(tr.Leaf(), "should not be leaf")
+		a.False(tr.IsLeaf(), "should not be leaf")
 		a.Equal(val, tr.Value.Interface())
 
 		a.Len(tr.Children, 2)
+
 		a.Equal(val.A, tr.Child("A").Value.String())
+		a.True(tr.Child("A").IsStructField())
+		a.NotZero(tr.Child("A").StructField())
+
 		a.Equal(val.B, tr.Child("B").Value.Interface())
+		a.True(tr.Child("B").IsStructField())
+		a.NotZero(tr.Child("B").StructField())
+
 		a.Equal(val.B.C, int(tr.Child("B").Child("C").Value.Int()))
+		a.True(tr.Child("B").Child("C").IsStructField())
+		a.NotZero(tr.Child("B").Child("C").StructField())
 	})
 
 	t.Run("StructTags", func(t *testing.T) {
@@ -209,7 +218,7 @@ func TestEncode(t *testing.T) {
 		}
 		tr := Encode(nil, val)
 
-		a.False(tr.Leaf(), "should not be leaf")
+		a.False(tr.IsLeaf(), "should not be leaf")
 
 		a.Len(tr.Children, 1)
 		a.Nil(tr.Child("A"))
@@ -223,7 +232,7 @@ func TestEncode(t *testing.T) {
 		val := []string{"foo", "bar"}
 		tr := Encode(nil, val)
 
-		a.False(tr.Leaf(), "should not be leaf")
+		a.False(tr.IsLeaf(), "should not be leaf")
 		a.Equal(val, tr.Value.Interface())
 
 		a.Len(tr.Children, 2)
@@ -237,7 +246,7 @@ func TestEncode(t *testing.T) {
 		val := [2]string{"foo", "bar"}
 		tr := Encode(nil, val)
 
-		a.False(tr.Leaf(), "should not be leaf")
+		a.False(tr.IsLeaf(), "should not be leaf")
 		a.Equal(val, tr.Value.Interface())
 
 		a.Len(tr.Children, 2)
@@ -251,7 +260,7 @@ func TestEncode(t *testing.T) {
 		val := map[string]int{"foo": 42, "bar": 1337}
 		tr := Encode(nil, val)
 
-		a.False(tr.Leaf(), "should not be leaf")
+		a.False(tr.IsLeaf(), "should not be leaf")
 		a.Equal(val, tr.Value.Interface())
 
 		a.Len(tr.Children, 2)

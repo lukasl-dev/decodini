@@ -66,7 +66,9 @@ func (e *Encoding) encodeStruct(name any, val reflect.Value) *Tree {
 			name = tag
 		}
 
-		children = append(children, e.encode(name, vf))
+		enc := e.encode(name, vf)
+		enc.structField = tf
+		children = append(children, enc)
 	}
 	return NewTree(name, val, children...)
 }
