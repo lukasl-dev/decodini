@@ -5,10 +5,9 @@
 </div>
 
 <div align="center">
-    <img width="300" src="/assets/decodini.png" alt="evochi" />
+    <img width="300" src="/assets/decodini.png" alt="decodini" />
 </div>
 
 <br />
 
 Decodini is a Go library for decoding and encoding from and to different Go data structures.
-

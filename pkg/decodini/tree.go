@@ -7,6 +7,7 @@ import (
 
 type Tree struct {
 	Name     any
+	Path     []any
 	Value    reflect.Value
 	Children []*Tree
 
