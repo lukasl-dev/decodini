@@ -88,20 +88,21 @@ func (t *Tree) DepthFirst() iter.Seq[*Tree] {
 			return
 		}
 		for _, child := range t.Children {
-			if !yield(child) {
+			if !child.depthFirst(yield) {
 				return
 			}
-			child.depthFirst()(yield)
 		}
 	}
 }
 
-// depthFirst returns a sequence of all tree nodes in the tree in depth-first
-// order. The given tree is not included in the sequence.
-func (t *Tree) depthFirst() iter.Seq[*Tree] {
-	return func(yield func(*Tree) bool) {
-		for _, child := range t.Children {
-			child.depthFirst()(yield)
+func (t *Tree) depthFirst(yield func(*Tree) bool) bool {
+	if !yield(t) {
+		return false
+	}
+	for _, child := range t.Children {
+		if !child.depthFirst(yield) {
+			return false
 		}
 	}
+	return true
 }
