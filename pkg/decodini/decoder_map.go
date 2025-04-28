@@ -35,19 +35,14 @@ func (d *MapDecoder) Decode(tr *Tree, target DecodeTarget) error {
 }
 
 func (d *MapDecoder) decodeIntoMap(tr *Tree, target DecodeTarget) error {
-	var typ reflect.Type
-	if target.Value.Kind() == reflect.Interface {
-		typ = tr.Value.Type()
-	} else {
-		typ = target.Value.Type()
-	}
+	typ := inferType(tr, target)
 	created := reflect.MakeMapWithSize(typ, len(tr.Children))
 
 	for _, child := range tr.Children {
 		key := reflect.ValueOf(child.Name())
 		val := reflect.New(typ.Elem()).Elem()
 
-		target := DecodeTarget{Value: val, mapKey: key}
+		target := DecodeTarget{Parent: &target, Value: val, mapKey: key}
 		err := d.dec.decode(append(tr.Path, child.Name()), child, target)
 		if err != nil {
 			return err
@@ -61,34 +56,46 @@ func (d *MapDecoder) decodeIntoMap(tr *Tree, target DecodeTarget) error {
 }
 
 func (d *MapDecoder) decodeIntoStruct(tr *Tree, target DecodeTarget) error {
-	var typ reflect.Type
-	if target.Value.Kind() == reflect.Interface {
-		typ = tr.Value.Type()
-	} else {
-		typ = target.Value.Type()
-	}
+	typ := inferType(tr, target)
 	created := reflect.New(typ).Elem()
 
 	for _, child := range tr.Children {
-		sf, vf := d.dec.structFieldByName(created, fmt.Sprint(child.Name()))
-		if !vf.IsValid() {
-			if d.dec.SkipUnknownFields {
-				continue
-			}
-			return newDecodeErrorf(tr.Path, "no such field: %s in %s", child.Name(), typ)
-		}
-
-		val := reflect.New(vf.Type()).Elem()
-
-		subtarget := DecodeTarget{Value: val, structField: sf}
-		err := d.dec.decode(append(tr.Path, child.Name()), child, subtarget)
-		if err != nil {
+		if err := d.decodeIntoStructField(tr, child, created, target); err != nil {
 			return err
 		}
-
-		vf.Set(val)
 	}
 
 	target.Value.Set(created)
+	return nil
+}
+
+func (d *MapDecoder) decodeIntoStructField(root, node *Tree, target reflect.Value, parent DecodeTarget) error {
+	sf, vf := d.dec.structFieldByName(target, fmt.Sprint(node.Name()))
+	subtarget := DecodeTarget{Parent: &parent, structField: sf}
+
+	if vf.IsValid() {
+		val := reflect.New(vf.Type()).Elem()
+		subtarget.Value = val
+	} else {
+		if d.dec.ResolveUnknownField == nil {
+			return newDecodeErrorf(root.Path, "no such field: %s in %s", node.Name(), target.Type())
+		}
+
+		value, err := d.dec.ResolveUnknownField(root, subtarget)
+		if err != nil {
+			return err
+		}
+		if !value.IsValid() {
+			return nil
+		}
+		subtarget.Value = value
+	}
+
+	err := d.dec.decode(append(root.Path, node.Name()), node, subtarget)
+	if err != nil {
+		return err
+	}
+
+	vf.Set(subtarget.Value)
 	return nil
 }

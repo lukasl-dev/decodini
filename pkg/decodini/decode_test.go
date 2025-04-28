@@ -576,7 +576,7 @@ func TestDecode_Map_SkipUnknownFields(t *testing.T) {
 	t.Parallel()
 
 	dec := &Decoding{
-		SkipUnknownFields: true,
+		ResolveUnknownField: DecodeIgnoreUnknownField,
 	}
 
 	val := map[string]any{
@@ -654,7 +654,7 @@ func TestDecode_Struct_SkipUnknownFields(t *testing.T) {
 	t.Parallel()
 
 	dec := &Decoding{
-		SkipUnknownFields: true,
+		ResolveUnknownField: DecodeIgnoreUnknownField,
 	}
 
 	type testStruct struct {
