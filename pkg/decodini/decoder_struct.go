@@ -50,14 +50,23 @@ func (d *StructDecoder) decodeIntoStruct(tr *Tree, target DecodeTarget) error {
 		}
 
 		sf, field := d.dec.structFieldByName(created.Elem(), name)
+		subtarget := DecodeTarget{Parent: &target, Value: field, structField: sf}
+
 		if !field.IsValid() {
-			if d.dec.SkipUnknownFields {
+			if d.dec.ResolveUnknownField == nil {
+				return newDecodeErrorf(tr.Path, "struct field %s does not exist", name)
+			}
+
+			value, err := d.dec.ResolveUnknownField(tr, subtarget)
+			if err != nil {
+				return err
+			}
+			if !value.IsValid() {
 				continue
 			}
-			return newDecodeErrorf(tr.Path, "struct field %s does not exist", name)
+			subtarget.Value = value
 		}
 
-		subtarget := DecodeTarget{Value: field, structField: sf}
 		if err := d.dec.decode(append(tr.Path, name), child, subtarget); err != nil {
 			return err
 		}
@@ -68,19 +77,14 @@ func (d *StructDecoder) decodeIntoStruct(tr *Tree, target DecodeTarget) error {
 }
 
 func (d *StructDecoder) decodeIntoMap(tr *Tree, target DecodeTarget) error {
-	var typ reflect.Type
-	if target.Value.Kind() == reflect.Interface {
-		typ = tr.Value.Type()
-	} else {
-		typ = target.Value.Type()
-	}
+	typ := inferType(tr, target)
 	created := reflect.MakeMapWithSize(typ, len(tr.Children))
 
 	for _, child := range tr.Children {
 		key := reflect.ValueOf(child.Name())
 		val := reflect.New(typ.Elem()).Elem()
 
-		subtarget := DecodeTarget{Value: val, mapKey: key}
+		subtarget := DecodeTarget{Parent: &target, Value: val, mapKey: key}
 		err := d.dec.decode(append(tr.Path, child.Name()), child, subtarget)
 		if err != nil {
 			return err

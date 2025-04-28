@@ -23,10 +23,18 @@ type Decoding struct {
 	// mechanism is used.
 	Decoder func(tr *Tree, target DecodeTarget) Decoder
 
-	// SkipUnknownFields specifies whether the decoder should ignore entries whose
-	// name cannot be mapped to a field in the target struct. This allows decoding
-	// into structs that contain fewer fields than the original input.
-	SkipUnknownFields bool
+	// ResolveUnknownField is called for values for which the decoder cannot find
+	// a matching field in the target struct. If it is nil, the decoder will fail
+	// for such values. If the returned [reflect.Value] is invalid (i.e. the zero
+	// value), the decoder will skip the field. Otherwise, decoding will continue
+	// for the remaining tree at that value. Therefore, it should be a pointer.
+	ResolveUnknownField func(tr *Tree, target DecodeTarget) (reflect.Value, error)
+}
+
+// DecodeIgnoreUnknownField can be used as a [Decoding.ResolveUnknownField]
+// to ignore unknown fields.
+func DecodeIgnoreUnknownField(_ *Tree, _ DecodeTarget) (reflect.Value, error) {
+	return reflect.Value{}, nil
 }
 
 var defaultDecoding = Decoding{
@@ -34,7 +42,8 @@ var defaultDecoding = Decoding{
 }
 
 type DecodeTarget struct {
-	Value reflect.Value
+	Value  reflect.Value
+	Parent *DecodeTarget
 
 	structField reflect.StructField
 	mapKey      reflect.Value
@@ -43,7 +52,12 @@ type DecodeTarget struct {
 
 // IsStructField returns whether the target represents a struct field.
 func (t DecodeTarget) IsStructField() bool {
-	return t.structField.Name != ""
+	if t.Parent == nil {
+		return false
+	}
+
+	parent := t.Parent.Value
+	return parent.IsValid() && parent.Kind() == reflect.Struct
 }
 
 // StructField returns the struct field. If the target does not represent a struct
@@ -57,7 +71,12 @@ func (t DecodeTarget) StructField() reflect.StructField {
 
 // IsMapKey returns whether the target represents a map key.
 func (t DecodeTarget) IsMapKey() bool {
-	return t.mapKey.IsValid()
+	if t.Parent == nil {
+		return false
+	}
+
+	parent := t.Parent.Value
+	return parent.IsValid() && parent.Kind() == reflect.Map
 }
 
 // MapKey returns the map key. If the target does not represent a map key (i.e.
@@ -71,7 +90,12 @@ func (t DecodeTarget) MapKey() reflect.Value {
 
 // IsSliceIndex returns whether the target represents a slice index.
 func (t DecodeTarget) IsSliceIndex() bool {
-	return t.sliceIndex != nil
+	if t.Parent == nil {
+		return false
+	}
+
+	parent := t.Parent.Value
+	return parent.IsValid() && parent.Kind() == reflect.Slice
 }
 
 // SliceIndex returns the slice index. If the target does not represent a slice
@@ -98,7 +122,7 @@ func Decode(dec *Decoding, tr *Tree, dst any) error {
 		rVal = reflect.ValueOf(dst)
 	}
 
-	return dec.decode(nil, tr, DecodeTarget{Value: rVal})
+	return dec.decode(nil, tr, DecodeTarget{Parent: nil, Value: rVal})
 }
 
 func (d *Decoding) decode(path []any, tr *Tree, target DecodeTarget) error {
@@ -167,4 +191,11 @@ func (d *Decoding) structFieldByName(
 		}
 	}
 	return reflect.StructField{}, reflect.Value{}
+}
+
+func inferType(tr *Tree, target DecodeTarget) reflect.Type {
+	if target.Value.Kind() == reflect.Interface {
+		return tr.Value.Type()
+	}
+	return target.Value.Type()
 }
