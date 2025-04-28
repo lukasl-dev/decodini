@@ -49,7 +49,10 @@ func (e *Encoding) encode(path []any, val reflect.Value) *Tree {
 		}
 		return e.encode(path, val.Elem())
 	default:
-		panic(fmt.Sprintf("unsupported kind %s for value %v", val.Kind(), val.Interface()))
+		if val.CanInterface() {
+			panic(fmt.Sprintf("unsupported kind %s for value %v", val.Kind(), val.Interface()))
+		}
+		panic(fmt.Sprintf("unsupported kind %s", val.Kind()))
 	}
 }
 
