@@ -51,7 +51,9 @@ func (d *StructDecoder) decodeIntoStruct(tr *Tree, target DecodeTarget) error {
 
 		sf, field := d.dec.structFieldByName(created.Elem(), name)
 		if !field.IsValid() {
-			// TODO: allow ignoring fields
+			if d.dec.SkipUnknownFields {
+				continue
+			}
 			return newDecodeErrorf(tr.Path, "struct field %s does not exist", name)
 		}
 

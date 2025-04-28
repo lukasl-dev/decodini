@@ -22,6 +22,11 @@ type Decoding struct {
 	// Decoder is a custom decoder. If nil is returned, the default decoding
 	// mechanism is used.
 	Decoder func(tr *Tree, target DecodeTarget) Decoder
+
+	// SkipUnknownFields specifies whether the decoder should ignore entries whose
+	// name cannot be mapped to a field in the target struct. This allows decoding
+	// into structs that contain fewer fields than the original input.
+	SkipUnknownFields bool
 }
 
 var defaultDecoding = Decoding{

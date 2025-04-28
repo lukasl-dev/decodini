@@ -571,3 +571,171 @@ func TestDecode_EmptyMap(t *testing.T) {
 		a.Equal(testStruct{}, dst, "should be equal")
 	})
 }
+
+func TestDecode_Map_SkipUnknownFields(t *testing.T) {
+	t.Parallel()
+
+	dec := &Decoding{
+		SkipUnknownFields: true,
+	}
+
+	val := map[string]any{
+		"Foo": 42,
+		"Bar": map[string]any{
+			"Name":    "john",
+			"Surname": "doe",
+		},
+		"Baz": "hello",
+	}
+	tr := Encode(nil, val)
+
+	t.Run("Empty struct", func(t *testing.T) {
+		a := assert.New(t)
+
+		type testStruct struct{}
+
+		var dst testStruct
+		err := Decode(dec, tr, &dst)
+
+		a.NoError(err, "should not error")
+		a.Equal(testStruct{}, dst, "should be equal")
+	})
+
+	t.Run("Partial top-level struct", func(t *testing.T) {
+		a := assert.New(t)
+
+		type testStruct struct {
+			Foo int
+			Baz string
+		}
+
+		var dst testStruct
+		err := Decode(dec, tr, &dst)
+
+		exp := testStruct{
+			Foo: val["Foo"].(int),
+			Baz: val["Baz"].(string),
+		}
+
+		a.NoError(err, "should not error")
+		a.Equal(exp, dst, "should be equal")
+	})
+
+	t.Run("Partial nested struct", func(t *testing.T) {
+		a := assert.New(t)
+
+		type testStruct struct {
+			Foo int
+			Bar struct {
+				Name string
+			}
+			Baz string
+		}
+
+		var dst testStruct
+		err := Decode(dec, tr, &dst)
+
+		exp := testStruct{
+			Foo: val["Foo"].(int),
+			Bar: struct {
+				Name string
+			}{
+				Name: val["Bar"].(map[string]any)["Name"].(string),
+			},
+			Baz: val["Baz"].(string),
+		}
+
+		a.NoError(err, "should not error")
+		a.Equal(exp, dst, "should be equal")
+	})
+}
+
+func TestDecode_Struct_SkipUnknownFields(t *testing.T) {
+	t.Parallel()
+
+	dec := &Decoding{
+		SkipUnknownFields: true,
+	}
+
+	type testStruct struct {
+		Foo int
+		Bar struct {
+			Name    string
+			Surname string
+		}
+		Baz string
+	}
+
+	val := testStruct{
+		Foo: 42,
+		Bar: struct {
+			Name    string
+			Surname string
+		}{
+			Name:    "john",
+			Surname: "doe",
+		},
+		Baz: "hello",
+	}
+	tr := Encode(nil, val)
+
+	t.Run("Empty struct", func(t *testing.T) {
+		a := assert.New(t)
+
+		type testTargetStruct struct{}
+
+		var dst testTargetStruct
+		err := Decode(dec, tr, &dst)
+
+		a.NoError(err, "should not error")
+		a.Equal(testTargetStruct{}, dst, "should be equal")
+	})
+
+	t.Run("Partial top-level struct", func(t *testing.T) {
+		a := assert.New(t)
+
+		type testTargetStruct struct {
+			Foo int
+			Baz string
+		}
+
+		var dst testTargetStruct
+		err := Decode(dec, tr, &dst)
+
+		exp := testTargetStruct{
+			Foo: val.Foo,
+			Baz: val.Baz,
+		}
+
+		a.NoError(err, "should not error")
+		a.Equal(exp, dst, "should be equal")
+	})
+
+	t.Run("Partial nested struct", func(t *testing.T) {
+		a := assert.New(t)
+
+		type testTargetStruct struct {
+			Foo int
+			Bar struct {
+				Name string
+			}
+			Baz string
+		}
+
+		var dst testTargetStruct
+		err := Decode(dec, tr, &dst)
+
+		exp := testTargetStruct{
+			Foo: val.Foo,
+			Bar: struct {
+				Name string
+			}{
+				Name: val.Bar.Name,
+			},
+			Baz: val.Baz,
+		}
+
+		a.NoError(err, "should not error")
+		a.Equal(exp, dst, "should be equal")
+	})
+}
