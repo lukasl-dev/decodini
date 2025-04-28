@@ -72,6 +72,9 @@ func (d *MapDecoder) decodeIntoStruct(tr *Tree, target DecodeTarget) error {
 	for _, child := range tr.Children {
 		sf, vf := d.dec.structFieldByName(created, fmt.Sprint(child.Name()))
 		if !vf.IsValid() {
+			if d.dec.SkipUnknownFields {
+				continue
+			}
 			return newDecodeErrorf(tr.Path, "no such field: %s in %s", child.Name(), typ)
 		}
 

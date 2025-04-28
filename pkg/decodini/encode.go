@@ -43,8 +43,13 @@ func (e *Encoding) encode(path []any, val reflect.Value) *Tree {
 		reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
 		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		return e.encodeScalar(path, val)
+	case reflect.Interface:
+		if val.IsNil() {
+			return NewTree(path, val)
+		}
+		return e.encode(path, val.Elem())
 	default:
-		panic(fmt.Sprintf("unsupported kind %s", val.Kind()))
+		panic(fmt.Sprintf("unsupported kind %s for value %v", val.Kind(), val.Interface()))
 	}
 }
 
