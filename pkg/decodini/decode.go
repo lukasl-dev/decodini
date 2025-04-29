@@ -42,8 +42,8 @@ var defaultDecoding = Decoding{
 }
 
 type DecodeTarget struct {
-	Value  reflect.Value
-	Parent *DecodeTarget
+	Value reflect.Value
+	// Parent *DecodeTarget
 
 	structField reflect.StructField
 	mapKey      reflect.Value
@@ -52,12 +52,13 @@ type DecodeTarget struct {
 
 // IsStructField returns whether the target represents a struct field.
 func (t DecodeTarget) IsStructField() bool {
-	if t.Parent == nil {
-		return false
-	}
-
-	parent := t.Parent.Value
-	return parent.IsValid() && parent.Kind() == reflect.Struct
+	return false
+	// if t.Parent == nil {
+	// 	return false
+	// }
+	//
+	// parent := t.Parent.Value
+	// return parent.IsValid() && parent.Kind() == reflect.Struct
 }
 
 // StructField returns the struct field. If the target does not represent a struct
@@ -71,12 +72,13 @@ func (t DecodeTarget) StructField() reflect.StructField {
 
 // IsMapKey returns whether the target represents a map key.
 func (t DecodeTarget) IsMapKey() bool {
-	if t.Parent == nil {
-		return false
-	}
-
-	parent := t.Parent.Value
-	return parent.IsValid() && parent.Kind() == reflect.Map
+	return false
+	// if t.Parent == nil {
+	// 	return false
+	// }
+	//
+	// parent := t.Parent.Value
+	// return parent.IsValid() && parent.Kind() == reflect.Map
 }
 
 // MapKey returns the map key. If the target does not represent a map key (i.e.
@@ -90,12 +92,13 @@ func (t DecodeTarget) MapKey() reflect.Value {
 
 // IsSliceIndex returns whether the target represents a slice index.
 func (t DecodeTarget) IsSliceIndex() bool {
-	if t.Parent == nil {
-		return false
-	}
-
-	parent := t.Parent.Value
-	return parent.IsValid() && parent.Kind() == reflect.Slice
+	return false
+	// if t.Parent == nil {
+	// 	return false
+	// }
+	//
+	// parent := t.Parent.Value
+	// return parent.IsValid() && parent.Kind() == reflect.Slice
 }
 
 // SliceIndex returns the slice index. If the target does not represent a slice
@@ -122,7 +125,7 @@ func Decode(dec *Decoding, tr *Tree, dst any) error {
 		rVal = reflect.ValueOf(dst)
 	}
 
-	return dec.decode(nil, tr, DecodeTarget{Parent: nil, Value: rVal})
+	return dec.decode(nil, tr, DecodeTarget{Value: rVal})
 }
 
 func (d *Decoding) decode(path []any, tr *Tree, target DecodeTarget) error {

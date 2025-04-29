@@ -43,14 +43,14 @@ func (d *StructDecoder) decodeIntoStruct(tr *Tree, target DecodeTarget) error {
 	}
 	created := reflect.New(typ)
 
-	for _, child := range tr.Children {
+	for _, child := range tr.Children() {
 		name, isString := child.Name().(string)
 		if !isString {
 			return newDecodeErrorf(tr.Path, "struct fields must be strings, but got %T", name)
 		}
 
 		sf, field := d.dec.structFieldByName(created.Elem(), name)
-		subtarget := DecodeTarget{Parent: &target, Value: field, structField: sf}
+		subtarget := DecodeTarget{Value: field, structField: sf}
 
 		if !field.IsValid() {
 			if d.dec.ResolveUnknownField == nil {
@@ -78,13 +78,13 @@ func (d *StructDecoder) decodeIntoStruct(tr *Tree, target DecodeTarget) error {
 
 func (d *StructDecoder) decodeIntoMap(tr *Tree, target DecodeTarget) error {
 	typ := inferType(tr, target)
-	created := reflect.MakeMapWithSize(typ, len(tr.Children))
+	created := reflect.MakeMapWithSize(typ, tr.NumChildren())
 
-	for _, child := range tr.Children {
+	for _, child := range tr.Children() {
 		key := reflect.ValueOf(child.Name())
 		val := reflect.New(typ.Elem()).Elem()
 
-		subtarget := DecodeTarget{Parent: &target, Value: val, mapKey: key}
+		subtarget := DecodeTarget{Value: val, mapKey: key}
 		err := d.dec.decode(append(tr.Path, child.Name()), child, subtarget)
 		if err != nil {
 			return err

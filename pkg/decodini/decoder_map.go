@@ -36,13 +36,13 @@ func (d *MapDecoder) Decode(tr *Tree, target DecodeTarget) error {
 
 func (d *MapDecoder) decodeIntoMap(tr *Tree, target DecodeTarget) error {
 	typ := inferType(tr, target)
-	created := reflect.MakeMapWithSize(typ, len(tr.Children))
+	created := reflect.MakeMapWithSize(typ, tr.NumChildren())
 
-	for _, child := range tr.Children {
+	for _, child := range tr.Children() {
 		key := reflect.ValueOf(child.Name())
 		val := reflect.New(typ.Elem()).Elem()
 
-		target := DecodeTarget{Parent: &target, Value: val, mapKey: key}
+		target := DecodeTarget{Value: val, mapKey: key}
 		err := d.dec.decode(append(tr.Path, child.Name()), child, target)
 		if err != nil {
 			return err
@@ -59,7 +59,7 @@ func (d *MapDecoder) decodeIntoStruct(tr *Tree, target DecodeTarget) error {
 	typ := inferType(tr, target)
 	created := reflect.New(typ).Elem()
 
-	for _, child := range tr.Children {
+	for _, child := range tr.Children() {
 		if err := d.decodeIntoStructField(tr, child, created, target); err != nil {
 			return err
 		}
@@ -71,7 +71,7 @@ func (d *MapDecoder) decodeIntoStruct(tr *Tree, target DecodeTarget) error {
 
 func (d *MapDecoder) decodeIntoStructField(root, node *Tree, target reflect.Value, parent DecodeTarget) error {
 	sf, vf := d.dec.structFieldByName(target, fmt.Sprint(node.Name()))
-	subtarget := DecodeTarget{Parent: &parent, structField: sf}
+	subtarget := DecodeTarget{structField: sf}
 
 	if vf.IsValid() {
 		val := reflect.New(vf.Type()).Elem()

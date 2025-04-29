@@ -1,6 +1,7 @@
 package decodini
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -33,6 +34,8 @@ func TestEncode(t *testing.T) {
 
 		val := bool(true)
 		tr := Encode(nil, val)
+
+		fmt.Println("OIDAAAAAAAAAAAA", tr.Value.Kind())
 
 		a.True(tr.IsPrimitive(), "should be leaf")
 		a.Equal(val, tr.Value.Bool())
@@ -187,7 +190,7 @@ func TestEncode(t *testing.T) {
 		a.False(tr.IsPrimitive(), "should not be leaf")
 		a.Equal(val, tr.Value.Interface())
 
-		a.Len(tr.Children, 2)
+		a.Equal(2, tr.NumChildren())
 
 		a.Equal(val.A, tr.Child("A").Value.String())
 		a.True(tr.Child("A").IsStructField())
@@ -220,7 +223,7 @@ func TestEncode(t *testing.T) {
 
 		a.False(tr.IsPrimitive(), "should not be leaf")
 
-		a.Len(tr.Children, 1)
+		a.Equal(1, tr.NumChildren())
 		a.Nil(tr.Child("A"))
 		a.Equal(val.B, int(tr.Child("B").Value.Int()))
 		a.Nil(tr.Child("C"))
@@ -235,7 +238,7 @@ func TestEncode(t *testing.T) {
 		a.False(tr.IsPrimitive(), "should not be leaf")
 		a.Equal(val, tr.Value.Interface())
 
-		a.Len(tr.Children, 2)
+		a.Equal(2, tr.NumChildren())
 		a.Equal(val[0], tr.Child(0).Value.String())
 		a.Equal(val[1], tr.Child(1).Value.String())
 	})
@@ -249,7 +252,7 @@ func TestEncode(t *testing.T) {
 		a.False(tr.IsPrimitive(), "should not be leaf")
 		a.Equal(val, tr.Value.Interface())
 
-		a.Len(tr.Children, 2)
+		a.Equal(2, tr.NumChildren())
 		a.Equal(val[0], tr.Child(0).Value.String())
 		a.Equal(val[1], tr.Child(1).Value.String())
 	})
@@ -263,7 +266,7 @@ func TestEncode(t *testing.T) {
 		a.False(tr.IsPrimitive(), "should not be leaf")
 		a.Equal(val, tr.Value.Interface())
 
-		a.Len(tr.Children, 2)
+		a.Equal(2, tr.NumChildren())
 		a.Equal(val["foo"], int(tr.Child("foo").Value.Int()))
 		a.Equal(val["bar"], int(tr.Child("bar").Value.Int()))
 	})
@@ -277,6 +280,6 @@ func TestEncode(t *testing.T) {
 		a.False(tr.IsPrimitive(), "should not be leaf")
 		a.Equal(val, tr.Value.Interface())
 
-		a.Len(tr.Children, 0)
+		a.Equal(0, tr.NumChildren())
 	})
 }

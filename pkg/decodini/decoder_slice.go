@@ -34,10 +34,11 @@ func (d *SliceDecoder) Decode(tr *Tree, target DecodeTarget) error {
 
 func (d *SliceDecoder) decodeIntoSlice(tr *Tree, target DecodeTarget) error {
 	typ := inferType(tr, target)
-	created := reflect.MakeSlice(typ, len(tr.Children), len(tr.Children))
+	created := reflect.MakeSlice(typ, tr.NumChildren(), tr.NumChildren())
 
-	for i, child := range tr.Children {
-		subtarget := DecodeTarget{Parent: &target, Value: created.Index(i), sliceIndex: &i}
+	for _, child := range tr.Children() {
+		i := child.Name().(int)
+		subtarget := DecodeTarget{Value: created.Index(i), sliceIndex: &i}
 		if err := d.dec.decode(append(tr.Path, i), child, subtarget); err != nil {
 			return err
 		}

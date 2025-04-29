@@ -1,7 +1,7 @@
 package decodini
 
 import (
-	"fmt"
+	"iter"
 	"reflect"
 )
 
@@ -24,79 +24,194 @@ func Encode(enc *Encoding, val any) *Tree {
 	if enc == nil {
 		enc = &defaultEncoding
 	}
-	rVal := reflect.ValueOf(val)
-	return enc.encode(nil, rVal)
+	return encode(enc, nil, reflect.ValueOf(val))
 }
 
-func (e *Encoding) encode(path []any, val reflect.Value) *Tree {
+func encode(enc *Encoding, path []any, val reflect.Value) *Tree {
+	if enc == nil {
+		enc = &defaultEncoding
+	}
 	switch val.Kind() {
 	case reflect.Ptr:
-		return e.encode(path, val.Elem())
-	case reflect.Struct:
-		return e.encodeStruct(path, val)
-	case reflect.Slice, reflect.Array:
-		return e.encodeSlice(path, val)
-	case reflect.Map:
-		return e.encodeMap(path, val)
-	case reflect.Invalid, reflect.String, reflect.Bool,
-		reflect.Float32, reflect.Float64,
-		reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
-		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		return e.encodeScalar(path, val)
+		return encode(enc, path, val.Elem())
+
 	case reflect.Interface:
-		if val.IsNil() {
-			return NewTree(path, val)
+		if !val.IsNil() {
+			return encode(enc, path, val.Elem())
 		}
-		return e.encode(path, val.Elem())
+	}
+	return newTree(enc, path, val)
+}
+
+type Tree struct {
+	enc *Encoding
+
+	Path  []any
+	Value reflect.Value
+
+	structField reflect.StructField
+}
+
+func newTree(enc *Encoding, path []any, value reflect.Value) *Tree {
+	return &Tree{enc: enc, Path: path, Value: value}
+}
+
+// Name returns the last element of the path, or nil if the path is empty,
+func (t *Tree) Name() any {
+	if len(t.Path) == 0 {
+		return nil
+	}
+	return t.Path[len(t.Path)-1]
+}
+
+// IsRoot returns whether the tree is a root node.
+func (t *Tree) IsRoot() bool {
+	return len(t.Path) == 0
+}
+
+// IsLeaf returns whether the tree is a leaf node, i.e. it has no children.
+func (t *Tree) IsLeaf() bool {
+	return t.NumChildren() == 0
+}
+
+// IsPrimitive returns whether the tree is a primitive node, i.e. int, bool,
+// string, etc.
+func (t *Tree) IsPrimitive() bool {
+	switch t.Value.Kind() {
+	case reflect.Array, reflect.Slice, reflect.Map, reflect.Struct:
+		return false
 	default:
-		if val.CanInterface() {
-			panic(fmt.Sprintf("unsupported kind %s for value %v", val.Kind(), val.Interface()))
-		}
-		panic(fmt.Sprintf("unsupported kind %s", val.Kind()))
+		return true
 	}
 }
 
-func (e *Encoding) encodeStruct(path []any, val reflect.Value) *Tree {
-	typ := val.Type()
-	var children []*Tree
-	for i := 0; i < val.NumField(); i++ {
-		tf, vf := typ.Field(i), val.Field(i)
-		if !tf.IsExported() {
-			continue
-		}
-		name := tf.Name
+// IsNil returns whether the tree's value is nil.
+func (t *Tree) IsNil() bool {
+	return t.Value == reflect.Value{}
+}
 
-		tag := tf.Tag.Get(e.StructTag)
-		if tag != "" {
-			if tag == "-" {
-				continue
+// IsStructField returns whether the tree represents a struct field.
+func (t *Tree) IsStructField() bool {
+	return t.structField.Name != ""
+}
+
+// StructField returns the struct field. If the tree does not represent a struct
+// field (i.e. IsStructField() is false), it panics.
+func (t *Tree) StructField() reflect.StructField {
+	if !t.IsStructField() {
+		panic("decodini: tree does not represent a struct field")
+	}
+	return t.structField
+}
+
+// NumChildren returns the number of children of this tree. Transitive children
+// (i.e. grandchildren) are not counted.
+func (t *Tree) NumChildren() int {
+	switch t.Value.Kind() {
+	case reflect.Struct:
+		fields := 0
+		for range t.structFields() {
+			fields++
+		}
+		return fields
+
+	case reflect.Slice, reflect.Array, reflect.Map:
+		return t.Value.Len()
+
+	default:
+		return 0
+	}
+}
+
+// Child returns the child tree that matches the given name exactly. If no
+// child tree matches the given name, the returned value is nil.
+func (t *Tree) Child(name any) *Tree {
+	for _, child := range t.Children() {
+		if child.Name() == name {
+			return child
+		}
+	}
+	return nil
+}
+
+// Children iterates over the children of this tree.
+func (t *Tree) Children() iter.Seq2[any, *Tree] {
+	switch t.Value.Kind() {
+	case reflect.Struct:
+		return t.structChildren()
+
+	case reflect.Slice, reflect.Array:
+		return t.sliceChildren()
+
+	case reflect.Map:
+		return t.mapChildren()
+
+	default:
+		return nil
+	}
+}
+
+func (t *Tree) structChildren() iter.Seq2[any, *Tree] {
+	val := t.Value
+	typ := t.Value.Type()
+
+	return func(yield func(any, *Tree) bool) {
+		for i := range t.structFields() {
+			sf, vf := typ.Field(i), val.Field(i)
+
+			name := sf.Name
+			if tag := sf.Tag.Get(t.enc.StructTag); tag != "" {
+				name = tag
 			}
-			name = tag
+
+			enc := encode(t.enc, append(t.Path, name), vf)
+			enc.structField = sf
+			if !yield(name, enc) {
+				return
+			}
 		}
-
-		enc := e.encode(append(path, name), vf)
-		enc.structField = tf
-		children = append(children, enc)
 	}
-	return NewTree(path, val, children...)
 }
 
-func (e *Encoding) encodeSlice(path []any, val reflect.Value) *Tree {
-	var children []*Tree
-	for i := 0; i < val.Len(); i++ {
-		children = append(children, e.encode(append(path, i), val.Index(i)))
+func (t *Tree) sliceChildren() iter.Seq2[any, *Tree] {
+	val := t.Value
+
+	return func(yield func(any, *Tree) bool) {
+		for i := range t.Value.Len() {
+			enc := encode(t.enc, append(t.Path, i), val.Index(i))
+			if !yield(i, enc) {
+				return
+			}
+		}
 	}
-	return NewTree(path, val, children...)
 }
 
-func (e *Encoding) encodeMap(path []any, val reflect.Value) *Tree {
-	var children []*Tree
-	for _, key := range val.MapKeys() {
-		children = append(children, e.encode(append(path, key.Interface()), val.MapIndex(key)))
+func (t *Tree) mapChildren() iter.Seq2[any, *Tree] {
+	val := t.Value
+
+	return func(yield func(any, *Tree) bool) {
+		for _, key := range t.Value.MapKeys() {
+			enc := encode(t.enc, append(t.Path, key.Interface()), val.MapIndex(key))
+			if !yield(key.Interface(), enc) {
+				return
+			}
+		}
 	}
-	return NewTree(path, val, children...)
 }
 
-func (e *Encoding) encodeScalar(path []any, val reflect.Value) *Tree {
-	return NewTree(path, val)
+// structFields iterates over the struct fields of the tree, skipping unexported
+// and ignored fields.
+func (t *Tree) structFields() iter.Seq[int] {
+	typ := t.Value.Type()
+
+	return func(yield func(int) bool) {
+		for i := range t.Value.NumField() {
+			tf := typ.Field(i)
+			if tf.IsExported() && tf.Tag.Get(t.enc.StructTag) != "-" {
+				if !yield(i) {
+					return
+				}
+			}
+		}
+	}
 }
