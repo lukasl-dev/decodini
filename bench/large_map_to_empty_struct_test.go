@@ -9,8 +9,8 @@ import (
 
 type emptyStruct struct{}
 
-func BenchmarkDecodini(b *testing.B) {
-	m := generateMap()
+func BenchmarkDecodini_LargeMap_to_EmptyStruct(b *testing.B) {
+	m := generateLargeMap()
 
 	b.ResetTimer()
 	for b.Loop() {
@@ -19,20 +19,12 @@ func BenchmarkDecodini(b *testing.B) {
 	}
 }
 
-func BenchmarkMapstructure(b *testing.B) {
-	m := generateMap()
+func BenchmarkMapstructure_LargeMap_to_EmptyStruct(b *testing.B) {
+	m := generateLargeMap()
 
 	b.ResetTimer()
 	for b.Loop() {
 		var res emptyStruct
 		_ = mapstructure.Decode(m, &res)
 	}
-}
-
-func generateMap() map[int]int {
-	m := make(map[int]int)
-	for i := range 1_000_000 {
-		m[i] = i
-	}
-	return m
 }
