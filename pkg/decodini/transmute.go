@@ -8,7 +8,10 @@ type Transmutation struct {
 // TransmuteInto encodes the given `from` value into a tree and decodes the tree
 // directly into the given `to` value.
 func TransmuteInto(tr *Transmutation, from, to any) error {
-	panic("not implemented yet")
+	if tr == nil {
+		tr = new(Transmutation)
+	}
+	return DecodeInto(tr.Decoding, Encode(tr.Encoding, from), to)
 }
 
 // Transmute encodes the given `from` value into a tree, and decodes the tree

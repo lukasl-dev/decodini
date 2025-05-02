@@ -7,12 +7,14 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
+type emptyStruct struct{}
+
 func BenchmarkDecodini(b *testing.B) {
 	m := generateMap()
 
 	b.ResetTimer()
 	for b.Loop() {
-		var res map[int]int
+		var res emptyStruct
 		_ = decodini.TransmuteInto(nil, m, &res)
 	}
 }
@@ -22,7 +24,7 @@ func BenchmarkMapstructure(b *testing.B) {
 
 	b.ResetTimer()
 	for b.Loop() {
-		var res map[int]int
+		var res emptyStruct
 		_ = mapstructure.Decode(m, &res)
 	}
 }

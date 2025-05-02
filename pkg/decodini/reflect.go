@@ -6,6 +6,13 @@ func includeStructField(tag string, sf reflect.StructField) bool {
 	return sf.IsExported() && sf.Tag.Get(tag) != "-"
 }
 
+func structFieldName(tag string, sf reflect.StructField) string {
+	if tagName, hasTag := sf.Tag.Lookup(tag); hasTag {
+		return tagName
+	}
+	return sf.Name
+}
+
 func structFieldByName(
 	tag string,
 	val reflect.Value,
@@ -23,15 +30,7 @@ func structFieldByName(
 		}
 		vf := val.Field(i)
 
-		tagName, hasTag := sf.Tag.Lookup(tag)
-		if hasTag {
-			if tagName == name {
-				return sf, vf
-			}
-			continue
-		}
-
-		if sf.Name == name {
+		if structFieldName(tag, sf) == name {
 			return sf, vf
 		}
 	}
@@ -46,4 +45,11 @@ func isPrimitive(kind reflect.Kind) bool {
 	default:
 		return true
 	}
+}
+
+func inferType(from *Tree, target DecodeTarget) reflect.Type {
+	if target.Value.Kind() == reflect.Interface {
+		return from.Value().Type()
+	}
+	return target.Value.Type()
 }

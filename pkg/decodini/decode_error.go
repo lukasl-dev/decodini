@@ -6,18 +6,24 @@ import (
 )
 
 type DecodeError struct {
-	Node *Tree
+	From *Tree
+	Into DecodeTarget
 	Err  error
 }
 
 var _ error = (*DecodeError)(nil)
 
-func newDecodeError(node *Tree, err error) *DecodeError {
-	return &DecodeError{Node: node, Err: err}
+func newDecodeError(from *Tree, into DecodeTarget, err error) *DecodeError {
+	return &DecodeError{From: from, Into: into, Err: err}
 }
 
-func newDecodeErrorf(node *Tree, format string, args ...any) *DecodeError {
-	return newDecodeError(node, fmt.Errorf(format, args...))
+func newDecodeErrorf(
+	from *Tree,
+	into DecodeTarget,
+	format string,
+	args ...any,
+) *DecodeError {
+	return newDecodeError(from, into, fmt.Errorf(format, args...))
 }
 
 // Unwrap returns the underlying error.
@@ -30,7 +36,7 @@ func (e *DecodeError) Error() string {
 
 // PathSTring returns a dot-separated string representation of the path.
 func (e *DecodeError) PathString() string {
-	path := e.Node.Path()
+	path := e.From.Path()
 	if path == nil {
 		return "<root>"
 	}

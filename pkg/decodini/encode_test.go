@@ -36,6 +36,7 @@ func TestEncode_ShallowStruct(t *testing.T) {
 		A string `decodini:"a"`
 		B int
 		C bool `decodini:"-"`
+		d float64
 	}
 
 	a := assert.New(t)
@@ -44,6 +45,7 @@ func TestEncode_ShallowStruct(t *testing.T) {
 		A: "foo",
 		B: 42,
 		C: true,
+		d: 420.0,
 	}
 	tr := Encode(nil, val)
 
@@ -85,6 +87,8 @@ func TestEncode_ShallowStruct(t *testing.T) {
 	}
 
 	a.Nil(tr.Child("C"))
+
+	a.Nil(tr.Child("d"))
 }
 
 func TestEncode_ShallowSlice(t *testing.T) {
