@@ -7,21 +7,19 @@ import (
 	"github.com/mitchellh/mapstructure"
 )
 
-type emptyStruct struct{}
-
-func BenchmarkLargeMap_to_EmptyStruct(b *testing.B) {
+func BenchmarkLargeMap_to_Map(b *testing.B) {
 	m := generateLargeMap()
 
 	b.Run("Decodini", func(b *testing.B) {
 		for b.Loop() {
-			var res emptyStruct
+			var res map[int]int
 			_ = decodini.TransmuteInto(nil, m, &res)
 		}
 	})
 
 	b.Run("Mapstructure", func(b *testing.B) {
 		for b.Loop() {
-			var res emptyStruct
+			var res map[int]int
 			_ = mapstructure.Decode(m, &res)
 		}
 	})
