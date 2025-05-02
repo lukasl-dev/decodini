@@ -6,7 +6,7 @@ func includeStructField(tag string, sf reflect.StructField) bool {
 	return sf.IsExported() && sf.Tag.Get(tag) != "-"
 }
 
-func structFieldBy(
+func structFieldByName(
 	tag string,
 	val reflect.Value,
 	name string,
@@ -37,4 +37,13 @@ func structFieldBy(
 	}
 
 	return reflect.StructField{}, reflect.Value{}
+}
+
+func isPrimitive(kind reflect.Kind) bool {
+	switch kind {
+	case reflect.Array, reflect.Slice, reflect.Map, reflect.Struct:
+		return false
+	default:
+		return true
+	}
 }

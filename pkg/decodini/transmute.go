@@ -15,6 +15,5 @@ func TransmuteInto(tr *Transmutation, from, to any) error {
 // into a variable of type `T`.
 func Transmute[T any](tr *Transmutation, from any) (T, error) {
 	var to T
-	err := TransmuteInto(tr, from, &to)
-	return to, err
+	return to, TransmuteInto(tr, from, &to)
 }

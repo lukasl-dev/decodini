@@ -56,12 +56,19 @@ func (t *Tree) Name() any {
 	return t.name
 }
 
+// Parent returns the parent of this node. If this is a root node, nil is
+// returned.
 func (t *Tree) Parent() *Tree {
 	return t.parent
 }
 
+// Value returns the underlying reflect.Value of this node.
 func (t *Tree) Value() reflect.Value {
 	return t.val
+}
+
+func (t *Tree) IsPrimitive() bool {
+	return isPrimitive(t.val.Kind())
 }
 
 // Path returns the path from the root to this node. The first element is the
@@ -79,16 +86,7 @@ func (t *Tree) Path() (path []any) {
 	return path
 }
 
-// IsRoot returns whether this tree node is a root node.
-func (t *Tree) IsRoot() bool {
-	return t.parent == nil
-}
-
-// IsLeaf returns whether this tree node does not have any children.
-func (t *Tree) IsLeaf() bool {
-	return t.NumChildren() == 0
-}
-
+// IsNil returns true if this node's value is nil.
 func (t *Tree) IsNil() bool {
 	return t.isNil
 }
@@ -165,7 +163,7 @@ func (t *Tree) Child(name any) *Tree {
 		if !ok {
 			return nil
 		}
-		_, vf := structFieldBy(t.enc.StructTag, t.val, nameStr)
+		_, vf := structFieldByName(t.enc.StructTag, t.val, nameStr)
 		if !vf.IsValid() {
 			return nil
 		}
@@ -194,6 +192,8 @@ func (t *Tree) Child(name any) *Tree {
 	}
 }
 
+// Children returns a sequence of the children of this node, preserving their
+// order.
 func (t *Tree) Children() iter.Seq[*Tree] {
 	switch t.val.Kind() {
 	case reflect.Struct:
