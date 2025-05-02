@@ -1,285 +1,156 @@
 package decodini
 
 import (
-	"fmt"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestEncode(t *testing.T) {
-	t.Parallel()
+func TestEncode_Nil(t *testing.T) {
+	a := assert.New(t)
 
-	t.Run("Nil", func(t *testing.T) {
-		a := assert.New(t)
+	tr := Encode(nil, nil)
 
-		tr := Encode(nil, nil)
+	a.NotNil(tr)
+	a.True(tr.IsRoot())
+	a.True(tr.IsLeaf())
+	a.EqualValues(0, tr.NumChildren())
 
-		a.True(tr.IsPrimitive(), "should be leaf")
-		a.True(tr.IsNil(), "should be nil")
-	})
+	a.True(tr.IsNil())
+}
 
-	t.Run("String", func(t *testing.T) {
-		a := assert.New(t)
+func TestEncode_String(t *testing.T) {
+	a := assert.New(t)
 
-		val := "test"
-		tr := Encode(nil, val)
+	tr := Encode(nil, "decodini")
 
-		a.True(tr.IsPrimitive(), "should be leaf")
-		a.Equal(val, tr.Value.String())
-	})
+	a.NotNil(tr)
+	a.True(tr.IsRoot())
+	a.True(tr.IsLeaf())
+	a.EqualValues(0, tr.NumChildren())
 
-	t.Run("Bool", func(t *testing.T) {
-		a := assert.New(t)
+	a.Equal(reflect.String, tr.Value().Kind())
+	a.Equal("decodini", tr.Value().String())
+}
 
-		val := bool(true)
-		tr := Encode(nil, val)
+func TestEncode_ShallowStruct(t *testing.T) {
+	type testStruct struct {
+		A string `decodini:"a"`
+		B int
+		C bool `decodini:"-"`
+	}
 
-		fmt.Println("OIDAAAAAAAAAAAA", tr.Value.Kind())
+	a := assert.New(t)
 
-		a.True(tr.IsPrimitive(), "should be leaf")
-		a.Equal(val, tr.Value.Bool())
-	})
+	val := testStruct{
+		A: "foo",
+		B: 42,
+		C: true,
+	}
+	tr := Encode(nil, val)
 
-	t.Run("Int", func(t *testing.T) {
-		a := assert.New(t)
+	a.NotNil(tr)
+	a.Nil(tr.Name())
+	a.True(tr.IsRoot())
+	a.Equal(uint(2), tr.NumChildren())
 
-		val := int(42)
-		tr := Encode(nil, val)
-
-		a.True(tr.IsPrimitive(), "should be leaf")
-		a.Equal(val, int(tr.Value.Int()))
-	})
-
-	t.Run("Int8", func(t *testing.T) {
-		a := assert.New(t)
-
-		val := int8(42)
-		tr := Encode(nil, val)
-
-		a.True(tr.IsPrimitive(), "should be leaf")
-		a.Equal(val, int8(tr.Value.Int()))
-	})
-
-	t.Run("Int16", func(t *testing.T) {
-		a := assert.New(t)
-
-		val := int16(42)
-		tr := Encode(nil, val)
-
-		a.True(tr.IsPrimitive(), "should be leaf")
-		a.Equal(val, int16(tr.Value.Int()))
-	})
-
-	t.Run("Int32", func(t *testing.T) {
-		a := assert.New(t)
-
-		val := int32(42)
-		tr := Encode(nil, val)
-
-		a.True(tr.IsPrimitive(), "should be leaf")
-		a.Equal(val, int32(tr.Value.Int()))
-	})
-
-	t.Run("Int64", func(t *testing.T) {
-		a := assert.New(t)
-
-		val := int64(42)
-		tr := Encode(nil, val)
-
-		a.True(tr.IsPrimitive(), "should be leaf")
-		a.Equal(val, int64(tr.Value.Int()))
-	})
-
-	t.Run("Uint", func(t *testing.T) {
-		a := assert.New(t)
-
-		val := uint(42)
-		tr := Encode(nil, val)
-
-		a.True(tr.IsPrimitive(), "should be leaf")
-		a.Equal(val, uint(tr.Value.Uint()))
-	})
-
-	t.Run("Uint8", func(t *testing.T) {
-		a := assert.New(t)
-
-		val := uint8(42)
-		tr := Encode(nil, val)
-
-		a.True(tr.IsPrimitive(), "should be leaf")
-		a.Equal(val, uint8(tr.Value.Uint()))
-	})
-
-	t.Run("Uint16", func(t *testing.T) {
-		a := assert.New(t)
-
-		val := uint16(42)
-		tr := Encode(nil, val)
-
-		a.True(tr.IsPrimitive(), "should be leaf")
-		a.Equal(val, uint16(tr.Value.Uint()))
-	})
-
-	t.Run("Uint32", func(t *testing.T) {
-		a := assert.New(t)
-
-		val := uint32(42)
-		tr := Encode(nil, val)
-
-		a.True(tr.IsPrimitive(), "should be leaf")
-		a.Equal(val, uint32(tr.Value.Uint()))
-	})
-
-	t.Run("Uint64", func(t *testing.T) {
-		a := assert.New(t)
-
-		val := uint64(42)
-		tr := Encode(nil, val)
-
-		a.True(tr.IsPrimitive(), "should be leaf")
-		a.Equal(val, uint64(tr.Value.Uint()))
-	})
-
-	t.Run("Float32", func(t *testing.T) {
-		a := assert.New(t)
-
-		val := float32(42)
-		tr := Encode(nil, val)
-
-		a.True(tr.IsPrimitive(), "should be leaf")
-		a.Equal(val, float32(tr.Value.Float()))
-	})
-
-	t.Run("Float64", func(t *testing.T) {
-		a := assert.New(t)
-
-		val := float64(42)
-		tr := Encode(nil, val)
-
-		a.True(tr.IsPrimitive(), "should be leaf")
-		a.Equal(val, float64(tr.Value.Float()))
-	})
-
-	t.Run("Ptr", func(t *testing.T) {
-		a := assert.New(t)
-
-		val := "test"
-		tr := Encode(nil, &val)
-
-		a.True(tr.IsPrimitive(), "should be leaf")
-		a.Equal(val, tr.Value.String())
-	})
-
-	t.Run("Struct", func(t *testing.T) {
-		a := assert.New(t)
-
-		type testStruct struct {
-			A string
-			B struct {
-				C int
-			}
-		}
-
-		val := testStruct{
-			A: "test",
-			B: struct{ C int }{C: 42},
-		}
-		tr := Encode(nil, val)
-
-		a.False(tr.IsPrimitive(), "should not be leaf")
-		a.Equal(val, tr.Value.Interface())
-
-		a.Equal(2, tr.NumChildren())
-
-		a.Equal(val.A, tr.Child("A").Value.String())
-		a.True(tr.Child("A").IsStructField())
-		a.NotZero(tr.Child("A").StructField())
-
-		a.Equal(val.B, tr.Child("B").Value.Interface())
-		a.True(tr.Child("B").IsStructField())
-		a.NotZero(tr.Child("B").StructField())
-
-		a.Equal(val.B.C, int(tr.Child("B").Child("C").Value.Int()))
-		a.True(tr.Child("B").Child("C").IsStructField())
-		a.NotZero(tr.Child("B").Child("C").StructField())
-	})
-
-	t.Run("StructTags", func(t *testing.T) {
-		a := assert.New(t)
-
-		type testStruct struct {
-			A string `decodini:"-"`
-			B int    `decodini:"B"`
-			C int    `decodini:"-"`
-		}
-
-		val := testStruct{
-			A: "test",
-			B: 42,
-			C: 1337,
-		}
-		tr := Encode(nil, val)
-
-		a.False(tr.IsPrimitive(), "should not be leaf")
-
-		a.Equal(1, tr.NumChildren())
+	{
 		a.Nil(tr.Child("A"))
-		a.Equal(val.B, int(tr.Child("B").Value.Int()))
-		a.Nil(tr.Child("C"))
-	})
+		childA := tr.Child("a")
+		a.NotNil(childA)
+		a.Equal("a", childA.Name())
+		a.Equal(reflect.String, childA.Value().Kind())
+		a.Equal(val.A, childA.Value().String())
+		a.Equal(tr, childA.Parent())
+		a.False(childA.IsRoot())
+		a.Equal(uint(0), childA.NumChildren())
+	}
 
-	t.Run("Slice", func(t *testing.T) {
-		a := assert.New(t)
+	{
+		a.Nil(tr.Child("b"))
+		childB := tr.Child("B")
+		a.NotNil(childB)
+		a.Equal("B", childB.Name())
+		a.Equal(reflect.Int, childB.Value().Kind())
+		a.Equal(val.B, int(childB.Value().Int()))
+		a.Equal(tr, childB.Parent())
+		a.False(childB.IsRoot())
+		a.Equal(uint(0), childB.NumChildren())
+	}
 
-		val := []string{"foo", "bar"}
-		tr := Encode(nil, val)
+	a.Nil(tr.Child("C"))
+}
 
-		a.False(tr.IsPrimitive(), "should not be leaf")
-		a.Equal(val, tr.Value.Interface())
+func TestEncode_ShallowSlice(t *testing.T) {
+	a := assert.New(t)
 
-		a.Equal(2, tr.NumChildren())
-		a.Equal(val[0], tr.Child(0).Value.String())
-		a.Equal(val[1], tr.Child(1).Value.String())
-	})
+	val := []string{"foo", "bar"}
+	tr := Encode(nil, val)
 
-	t.Run("Array", func(t *testing.T) {
-		a := assert.New(t)
+	a.NotNil(tr)
+	a.Nil(tr.Name())
+	a.True(tr.IsRoot())
+	a.Equal(uint(len(val)), tr.NumChildren())
 
-		val := [2]string{"foo", "bar"}
-		tr := Encode(nil, val)
+	a.Nil(tr.Child(-1))
+	a.Nil(tr.Child(len(val)))
 
-		a.False(tr.IsPrimitive(), "should not be leaf")
-		a.Equal(val, tr.Value.Interface())
+	{
+		child0 := tr.Child(0)
+		a.NotNil(child0)
+		a.Equal(0, child0.Name())
+		a.Equal(reflect.String, child0.Value().Kind())
+		a.Equal(val[0], child0.Value().String())
+		a.Equal(tr, child0.Parent())
+		a.False(child0.IsRoot())
+		a.Equal(uint(0), child0.NumChildren())
+	}
 
-		a.Equal(2, tr.NumChildren())
-		a.Equal(val[0], tr.Child(0).Value.String())
-		a.Equal(val[1], tr.Child(1).Value.String())
-	})
+	{
+		child1 := tr.Child(1)
+		a.NotNil(child1)
+		a.Equal(1, child1.Name())
+		a.Equal(reflect.String, child1.Value().Kind())
+		a.Equal(val[1], child1.Value().String())
+		a.Equal(tr, child1.Parent())
+		a.False(child1.IsRoot())
+		a.Equal(uint(0), child1.NumChildren())
+	}
+}
 
-	t.Run("Map", func(t *testing.T) {
-		a := assert.New(t)
+func TestEncode_ShallowMap(t *testing.T) {
+	a := assert.New(t)
 
-		val := map[string]int{"foo": 42, "bar": 1337}
-		tr := Encode(nil, val)
+	val := map[string]string{
+		"foo": "bar",
+		"baz": "baz",
+	}
+	tr := Encode(nil, val)
 
-		a.False(tr.IsPrimitive(), "should not be leaf")
-		a.Equal(val, tr.Value.Interface())
+	a.NotNil(tr)
+	a.True(tr.IsRoot())
+	a.Equal(uint(len(val)), tr.NumChildren())
 
-		a.Equal(2, tr.NumChildren())
-		a.Equal(val["foo"], int(tr.Child("foo").Value.Int()))
-		a.Equal(val["bar"], int(tr.Child("bar").Value.Int()))
-	})
+	{
+		childFoo := tr.Child("foo")
+		a.NotNil(childFoo)
+		a.Equal("foo", childFoo.Name())
+		a.Equal(reflect.String, childFoo.Value().Kind())
+		a.Equal(val["foo"], childFoo.Value().String())
+		a.Equal(tr, childFoo.Parent())
+		a.False(childFoo.IsRoot())
+		a.Equal(uint(0), childFoo.NumChildren())
+	}
 
-	t.Run("Map/Empty", func(t *testing.T) {
-		a := assert.New(t)
-
-		val := map[string]int{}
-		tr := Encode(nil, val)
-
-		a.False(tr.IsPrimitive(), "should not be leaf")
-		a.Equal(val, tr.Value.Interface())
-
-		a.Equal(0, tr.NumChildren())
-	})
+	{
+		childBaz := tr.Child("baz")
+		a.NotNil(childBaz)
+		a.Equal("baz", childBaz.Name())
+		a.Equal(reflect.String, childBaz.Value().Kind())
+		a.Equal(val["baz"], childBaz.Value().String())
+		a.Equal(tr, childBaz.Parent())
+		a.False(childBaz.IsRoot())
+		a.Equal(uint(0), childBaz.NumChildren())
+	}
 }

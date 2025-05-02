@@ -5,18 +5,10 @@ type Transmutation struct {
 	Decoding *Decoding
 }
 
-var defaultTransmutation = Transmutation{
-	Encoding: &defaultEncoding,
-	Decoding: &defaultDecoding,
-}
-
 // TransmuteInto encodes the given `from` value into a tree and decodes the tree
 // directly into the given `to` value.
 func TransmuteInto(tr *Transmutation, from, to any) error {
-	if tr == nil {
-		tr = &defaultTransmutation
-	}
-	return Decode(tr.Decoding, Encode(tr.Encoding, from), to)
+	panic("not implemented yet")
 }
 
 // Transmute encodes the given `from` value into a tree, and decodes the tree
