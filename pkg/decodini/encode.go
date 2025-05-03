@@ -261,6 +261,6 @@ func (t *Tree) Children() iter.Seq[*Tree] {
 		}
 
 	default:
-		return nil
+		return func(yield func(*Tree) bool) {}
 	}
 }
