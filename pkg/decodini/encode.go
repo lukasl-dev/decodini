@@ -258,3 +258,12 @@ func (t *Tree) Children() iter.Seq[*Tree] {
 		return func(yield func(*Tree) bool) {}
 	}
 }
+
+func (t *Tree) dummyChild(name any) *Tree {
+	return &Tree{
+		enc:    t.enc,
+		name:   name,
+		parent: t,
+		isNil:  true, // TODO: think about whether there needs to be differentiation
+	}
+}

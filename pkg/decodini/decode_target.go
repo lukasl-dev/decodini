@@ -3,6 +3,7 @@ package decodini
 import "reflect"
 
 type DecodeTarget struct {
+	Name  any
 	Value reflect.Value
 
 	structField *reflect.StructField

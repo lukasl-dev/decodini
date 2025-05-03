@@ -2,7 +2,11 @@ package decodini
 
 import "reflect"
 
-type Decoder = func(tr *Tree, target DecodeTarget) error
+type Decoder func(tr *Tree, target DecodeTarget) error
+
+func DecodeIgnoreUnmatched(*Tree, DecodeTarget) (*Tree, error) {
+	return nil, nil
+}
 
 type Decoding struct {
 	StructTag string
@@ -10,15 +14,25 @@ type Decoding struct {
 	// Decoder is a custom decoder. If nil is returned, the default decoding
 	// mechanism is used.
 	Decoder func(tr *Tree, target DecodeTarget) Decoder
+
+	Unmatched func(tr *Tree, target DecodeTarget) (*Tree, error)
 }
 
 var defaultDecoding = Decoding{
 	StructTag: "decodini",
+	Unmatched: nil,
 }
 
 func DecodeInto(dec *Decoding, tr *Tree, into any) error {
 	if dec == nil {
 		dec = &defaultDecoding
+	}
+	if dec.StructTag == "" {
+		dec.StructTag = defaultDecoding.StructTag
+	}
+
+	if tr == nil {
+		panic("decodini: cannot decode from nil tree")
 	}
 
 	rVal, isVal := into.(reflect.Value)
@@ -113,18 +127,33 @@ func (dec *Decoding) intoStructFromStructOrMap(node *Tree, target DecodeTarget) 
 		if !includeStructField(dec.StructTag, targetSF) {
 			continue
 		}
-
 		targetName := structFieldName(dec.StructTag, targetSF)
+
 		from := node.Child(targetName)
-		if from == nil {
-			return newDecodeErrorf(
-				node,
-				target,
-				"struct field %s is unmatched", targetName,
-			)
+		subTarget := DecodeTarget{
+			Name:        targetName,
+			Value:       target.Value.Field(i),
+			structField: &targetSF,
 		}
 
-		subTarget := DecodeTarget{Value: target.Value.Field(i), structField: &targetSF}
+		if from == nil {
+			if dec.Unmatched == nil {
+				return newDecodeErrorf(
+					node.dummyChild(targetName),
+					target,
+					"struct field %s is unmatched in source tree", targetName,
+				)
+			}
+			uFrom, uErr := dec.Unmatched(from, subTarget)
+			if uErr != nil {
+				return uErr
+			}
+			if uFrom == nil {
+				continue
+			}
+			from = uFrom
+		}
+
 		if err := dec.into(from, subTarget); err != nil {
 			return err
 		}
@@ -162,7 +191,7 @@ func (dec *Decoding) intoSliceFromSliceOrArray(
 	for from := range node.Children() {
 		val := reflect.New(typ.Elem()).Elem()
 
-		subtarget := DecodeTarget{Value: val}
+		subtarget := DecodeTarget{Name: from.Name(), Value: val}
 		err := dec.into(from, subtarget)
 		if err != nil {
 			return err
@@ -187,7 +216,7 @@ func (dec *Decoding) intoSliceFromMap(node *Tree, target DecodeTarget) error {
 	for from := range node.Children() {
 		val := reflect.New(typ.Elem()).Elem()
 
-		subtarget := DecodeTarget{Value: val}
+		subtarget := DecodeTarget{Name: i, Value: val}
 		err := dec.into(from, subtarget)
 		if err != nil {
 			return err
@@ -234,7 +263,7 @@ func (dec *Decoding) intoMapFromMapOrStruct(node *Tree, target DecodeTarget) err
 		key := reflect.ValueOf(from.Name())
 		val := reflect.New(typ.Elem()).Elem()
 
-		subtarget := DecodeTarget{Value: val}
+		subtarget := DecodeTarget{Name: key.Interface(), Value: val}
 		err := dec.into(from, subtarget)
 		if err != nil {
 			return err
