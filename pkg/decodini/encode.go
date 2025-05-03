@@ -92,8 +92,12 @@ func (t *Tree) IsNil() bool {
 	return t.isNil
 }
 
+func (t *Tree) IsStructField() bool {
+	return t.structField != nil
+}
+
 func (t *Tree) StructField() reflect.StructField {
-	if t.structField == nil {
+	if !t.IsStructField() {
 		panic("decodini: node is not a struct field")
 	}
 	return *t.structField
