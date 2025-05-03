@@ -53,3 +53,14 @@ func inferType(from *Tree, target DecodeTarget) reflect.Type {
 	}
 	return target.Value.Type()
 }
+
+func isNil(val reflect.Value) bool {
+	switch val.Kind() {
+	case reflect.Chan, reflect.Func, reflect.Map,
+		reflect.Pointer, reflect.UnsafePointer,
+		reflect.Interface, reflect.Slice:
+		return val.IsNil()
+	default:
+		return false
+	}
+}

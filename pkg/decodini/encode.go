@@ -72,7 +72,7 @@ func (t *Tree) Value() reflect.Value {
 // is not further used.
 func (t *Tree) SetValue(val reflect.Value) {
 	t.val = val
-	t.isNil = val.Kind() == reflect.Invalid || val.IsNil()
+	t.isNil = isNil(val)
 }
 
 func (t *Tree) IsPrimitive() bool {
