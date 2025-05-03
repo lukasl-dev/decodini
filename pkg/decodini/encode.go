@@ -82,16 +82,10 @@ func (t *Tree) IsPrimitive() bool {
 // Path returns the path from the root to this node. The first element is the
 // name of
 func (t *Tree) Path() (path []any) {
-	if t.parent == nil {
+	if t.name == nil || t.parent == nil {
 		return nil
 	}
-
-	curr := t
-	for curr != nil {
-		path = append(path, curr.name)
-		curr = curr.parent
-	}
-	return path
+	return append(t.parent.Path(), t.name)
 }
 
 // IsNil returns true if this node's value is nil.
