@@ -124,7 +124,7 @@ func (dec *Decoding) intoStructFromStructOrMap(node *Tree, target DecodeTarget) 
 			)
 		}
 
-		subTarget := DecodeTarget{Value: target.Value.Field(i)}
+		subTarget := DecodeTarget{Value: target.Value.Field(i), structField: &targetSF}
 		if err := dec.into(from, subTarget); err != nil {
 			return err
 		}
