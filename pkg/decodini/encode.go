@@ -47,7 +47,8 @@ type Tree struct {
 	parent *Tree
 	val    reflect.Value
 
-	isNil bool
+	isNil       bool
+	structField *reflect.StructField
 }
 
 // Name returns the name of this node in the parent node. If this node is root,
@@ -89,6 +90,13 @@ func (t *Tree) Path() (path []any) {
 // IsNil returns true if this node's value is nil.
 func (t *Tree) IsNil() bool {
 	return t.isNil
+}
+
+func (t *Tree) StructField() reflect.StructField {
+	if t.structField == nil {
+		panic("decodini: node is not a struct field")
+	}
+	return *t.structField
 }
 
 // DepthFirst returns a sequence of the tree nodes in depth-first order.
@@ -163,11 +171,12 @@ func (t *Tree) Child(name any) *Tree {
 		if !ok {
 			return nil
 		}
-		_, vf := structFieldByName(t.enc.StructTag, t.val, nameStr)
+		sf, vf := structFieldByName(t.enc.StructTag, t.val, nameStr)
 		if !vf.IsValid() {
 			return nil
 		}
 		tr := encode(t.enc, t, name, vf)
+		tr.structField = &sf
 		return tr
 
 	case reflect.Slice, reflect.Array:
@@ -213,6 +222,7 @@ func (t *Tree) Children() iter.Seq[*Tree] {
 				}
 
 				tr := encode(t.enc, t, name, vf)
+				tr.structField = &sf
 				if !yield(tr) {
 					return
 				}
