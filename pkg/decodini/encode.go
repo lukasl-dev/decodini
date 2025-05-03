@@ -68,6 +68,13 @@ func (t *Tree) Value() reflect.Value {
 	return t.val
 }
 
+// SetValue updates the value of this node to the given val. The original value
+// is not further used.
+func (t *Tree) SetValue(val reflect.Value) {
+	t.val = val
+	t.isNil = val.Kind() == reflect.Invalid || val.IsNil()
+}
+
 func (t *Tree) IsPrimitive() bool {
 	return isPrimitive(t.val.Kind())
 }
