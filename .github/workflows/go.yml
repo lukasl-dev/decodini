@@ -1,18 +1,21 @@
+# .github/workflows/go.yml
 name: Go
 
 on:
   push:
     branches: [ "**" ]
     paths:
-      - "**/*.go"       
-      - "**/go.mod"     
-      - "**/go.sum"     
+      - "**/*.go"
+      - "**/go.mod"
+      - "**/go.sum"
+      - ".github/workflows/go.yml"
   pull_request:
     branches: [ "**" ]
     paths:
       - "**/*.go"
       - "**/go.mod"
       - "**/go.sum"
+      - ".github/workflows/go.yml"
 
 jobs:
   build:
@@ -30,3 +33,15 @@ jobs:
 
       - name: Test
         run: go test -v ./...
+
+      - name: Benchmark
+        working-directory: ./bench
+        run: go test -bench=. -cpuprofile=cpu.prof -memprofile=mem.prof
+
+      - name: Upload benchmark profiles
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-profiles
+          path: |
+            bench/cpu.prof
+            bench/mem.prof
