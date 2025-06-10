@@ -1,6 +1,8 @@
 package decodini
 
-import "reflect"
+import (
+	"reflect"
+)
 
 type Decoder func(tr *Tree, target DecodeTarget) error
 
@@ -127,10 +129,27 @@ func (dec *Decoding) intoStructFromStructOrMap(node *Tree, target DecodeTarget) 
 		if !includeStructField(dec.StructTag, targetSF) {
 			continue
 		}
+
 		targetName := structFieldName(dec.StructTag, targetSF)
 
+		if targetSF.Anonymous {
+			from := node
+			if child := node.Child(targetName); child != nil {
+				from = child
+			}
+
+			sub := DecodeTarget{
+				Value:       target.Value.Field(i),
+				structField: &targetSF,
+			}
+			if err := dec.into(from, sub); err != nil {
+				return err
+			}
+			continue
+		}
+
 		from := node.Child(targetName)
-		subTarget := DecodeTarget{
+		sub := DecodeTarget{
 			Name:        targetName,
 			Value:       target.Value.Field(i),
 			structField: &targetSF,
@@ -144,7 +163,7 @@ func (dec *Decoding) intoStructFromStructOrMap(node *Tree, target DecodeTarget) 
 					"struct field %s is unmatched in source tree", targetName,
 				)
 			}
-			uFrom, uErr := dec.Unmatched(from, subTarget)
+			uFrom, uErr := dec.Unmatched(from, sub)
 			if uErr != nil {
 				return uErr
 			}
@@ -154,7 +173,7 @@ func (dec *Decoding) intoStructFromStructOrMap(node *Tree, target DecodeTarget) 
 			from = uFrom
 		}
 
-		if err := dec.into(from, subTarget); err != nil {
+		if err := dec.into(from, sub); err != nil {
 			return err
 		}
 	}

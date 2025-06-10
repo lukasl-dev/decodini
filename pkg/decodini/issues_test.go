@@ -9,11 +9,11 @@ import (
 // http://github.com/lukasl-dev/decodini/issues/2
 func TestIssue_2(t *testing.T) {
 	type (
-		embedded struct {
+		Embedded struct {
 			Foo string
 		}
-		outer struct {
-			embedded
+		Outer struct {
+			Embedded
 		}
 	)
 
@@ -24,11 +24,11 @@ func TestIssue_2(t *testing.T) {
 	}
 	tr := Encode(nil, from)
 
-	to, err := Decode[outer](nil, tr)
+	to, err := Decode[Outer](nil, tr)
 	a.NoError(err)
 
-	expected := outer{
-		embedded: embedded{
+	expected := Outer{
+		Embedded: Embedded{
 			Foo: "bar",
 		},
 	}
