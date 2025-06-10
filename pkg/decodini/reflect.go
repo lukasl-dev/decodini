@@ -18,6 +18,10 @@ func structFieldByName(
 	val reflect.Value,
 	name string,
 ) (reflect.StructField, reflect.Value) {
+	if val.Kind() == reflect.Pointer {
+		return structFieldByName(tag, val.Elem(), name)
+	}
+
 	if val.Kind() != reflect.Struct {
 		panic("decodini: cannot get struct field of non-struct")
 	}
@@ -29,6 +33,14 @@ func structFieldByName(
 			continue
 		}
 		vf := val.Field(i)
+
+		if sf.Anonymous {
+			sf, vf = structFieldByName(tag, vf, name)
+			if vf.IsValid() {
+				return sf, vf
+			}
+			continue
+		}
 
 		if structFieldName(tag, sf) == name {
 			return sf, vf
@@ -54,6 +66,7 @@ func inferType(from *Tree, target DecodeTarget) reflect.Type {
 	return target.Value.Type()
 }
 
+// isNil safely checks whether val is a nil.
 func isNil(val reflect.Value) bool {
 	switch val.Kind() {
 	case reflect.Chan, reflect.Func, reflect.Map,

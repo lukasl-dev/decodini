@@ -1,8 +1,10 @@
 package decodini
 
 import (
+	"fmt"
 	"iter"
 	"reflect"
+	"strings"
 )
 
 type Encoding struct {
@@ -51,8 +53,8 @@ type Tree struct {
 	structField *reflect.StructField
 }
 
-// Name returns the name of this node in the parent node. If this node is root,
-// null is returned.
+// Name returns the name of this node in the parent node. If this node is root
+// or represents an embedded node (i.e. anonymous struct field), the name is nil.
 func (t *Tree) Name() any {
 	return t.name
 }
@@ -211,26 +213,9 @@ func (t *Tree) Child(name any) *Tree {
 func (t *Tree) Children() iter.Seq[*Tree] {
 	switch t.val.Kind() {
 	case reflect.Struct:
-		typ := t.val.Type()
 		return func(yield func(*Tree) bool) {
-			for i := range t.val.NumField() {
-				sf := typ.Field(i)
-				if !includeStructField(t.enc.StructTag, sf) {
-					continue
-				}
-				vf := t.val.Field(i)
-
-				name := sf.Name
-				tagName, hasTag := sf.Tag.Lookup(t.enc.StructTag)
-				if hasTag {
-					name = tagName
-				}
-
-				tr := encode(t.enc, t, name, vf)
-				tr.structField = &sf
-				if !yield(tr) {
-					return
-				}
+			if !yieldStructFields(t.enc, t.parent, t.val, yield) {
+				return
 			}
 		}
 
@@ -259,6 +244,20 @@ func (t *Tree) Children() iter.Seq[*Tree] {
 	}
 }
 
+func (t *Tree) String() string {
+	var sb strings.Builder
+	sb.WriteString("- ")
+	sb.WriteString(fmt.Sprint(t.Name()))
+	sb.WriteString(" (")
+	sb.WriteString(t.val.Kind().String())
+	sb.WriteString(")\n")
+	for child := range t.Children() {
+		sb.WriteString("  ")
+		sb.WriteString(child.String())
+	}
+	return sb.String()
+}
+
 func (t *Tree) dummyChild(name any) *Tree {
 	return &Tree{
 		enc:    t.enc,
@@ -266,4 +265,50 @@ func (t *Tree) dummyChild(name any) *Tree {
 		parent: t,
 		isNil:  true, // TODO: think about whether there needs to be differentiation
 	}
+}
+
+func yieldStructFields(
+	enc *Encoding,
+	parent *Tree,
+	val reflect.Value,
+	yield func(*Tree) bool,
+) bool {
+	if val.Kind() == reflect.Pointer {
+		return yieldStructFields(enc, parent, val.Elem(), yield)
+	}
+
+	if val.Kind() != reflect.Struct {
+		panic("decodini: cannot yield struct fields of non-struct")
+	}
+
+	typ := val.Type()
+	for i := range val.NumField() {
+		sf := typ.Field(i)
+		if !includeStructField(enc.StructTag, sf) {
+			continue
+		}
+		vf := val.Field(i)
+
+		if sf.Anonymous {
+			if !yieldStructFields(enc, parent, vf, yield) {
+				return false
+			}
+			continue
+		}
+
+		name := sf.Name
+		tagName, hasTag := sf.Tag.Lookup(enc.StructTag)
+		if hasTag {
+			name = tagName
+		}
+
+		tr := encode(enc, parent, name, vf)
+		tr.structField = &sf
+
+		if !yield(tr) {
+			return false
+		}
+	}
+
+	return true
 }
