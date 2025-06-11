@@ -36,7 +36,7 @@ jobs:
 
       - name: Benchmark
         working-directory: ./bench
-        run: go test -bench=. -cpuprofile=cpu.prof -memprofile=mem.prof
+        run: go test -bench=. -cpuprofile=cpu.prof -memprofile=mem.prof -benchmem
 
       - name: Upload benchmark profiles
         uses: actions/upload-artifact@v4
