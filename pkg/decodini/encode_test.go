@@ -257,16 +257,19 @@ func TestTree_DepthFirst(t *testing.T) {
 		a.NotNil(tr)
 
 		df := slices.Collect(tr.DepthFirst())
-		a.Len(df, 3)
+		a.Len(df, 4)
 
 		a.Equal(val, df[0].Value().Interface())
 		a.Equal([]any(nil), df[0].Path())
 
-		a.Equal(val.Inner.A, df[1].Value().Interface())
-		a.Equal([]any{"a"}, df[1].Path())
+		a.Equal(val.Inner, df[1].Value().Interface())
+		a.Equal([]any{"Inner"}, df[1].Path())
 
-		a.Equal(val.Inner.B, df[2].Value().Interface())
-		a.Equal([]any{"B"}, df[2].Path())
+		a.Equal(val.Inner.A, df[2].Value().Interface())
+		a.Equal([]any{"Inner", "a"}, df[2].Path())
+
+		a.Equal(val.Inner.B, df[3].Value().Interface())
+		a.Equal([]any{"Inner", "B"}, df[3].Path())
 	})
 
 	t.Run("Backtracking", func(t *testing.T) {

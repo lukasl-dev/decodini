@@ -214,7 +214,7 @@ func (t *Tree) Children() iter.Seq[*Tree] {
 	switch t.val.Kind() {
 	case reflect.Struct:
 		return func(yield func(*Tree) bool) {
-			if !yieldStructFields(t.enc, t.parent, t.val, yield) {
+			if !yieldStructFields(t.enc, t, t.val, yield) {
 				return
 			}
 		}
