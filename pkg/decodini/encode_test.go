@@ -2,6 +2,7 @@ package decodini
 
 import (
 	"reflect"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -175,4 +176,183 @@ func TestEncode_ShallowMap(t *testing.T) {
 
 		a.Equal(uint(0), childBaz.NumChildren())
 	}
+}
+
+func TestTree_DepthFirst(t *testing.T) {
+	t.Run("Singleton", func(t *testing.T) {
+		type testStruct struct {
+			A string `decodini:"a"`
+		}
+
+		a := assert.New(t)
+
+		val := testStruct{
+			A: "foo",
+		}
+
+		tr := Encode(nil, val)
+		a.NotNil(tr)
+
+		df := slices.Collect(tr.DepthFirst())
+		a.Len(df, 2)
+		a.Equal(val, df[0].Value().Interface())
+		a.Equal(val.A, df[1].Value().Interface())
+	})
+
+	t.Run("Shallow", func(t *testing.T) {
+		type testStruct struct {
+			A string `decodini:"a"`
+			B int
+			C bool `decodini:"-"` // ignored
+		}
+
+		a := assert.New(t)
+
+		val := testStruct{
+			A: "foo",
+			B: 42,
+			C: true,
+		}
+
+		tr := Encode(nil, val)
+		a.NotNil(tr)
+
+		df := slices.Collect(tr.DepthFirst())
+		a.Len(df, 3)
+
+		a.Equal(val, df[0].Value().Interface())
+		a.Equal([]any(nil), df[0].Path())
+
+		a.Equal(val.A, df[1].Value().Interface())
+		a.Equal([]any{"a"}, df[1].Path())
+
+		a.Equal(val.B, df[2].Value().Interface())
+		a.Equal([]any{"B"}, df[2].Path())
+	})
+
+	t.Run("Nested", func(t *testing.T) {
+		type (
+			innerStruct struct {
+				A string `decodini:"a"`
+				B int
+				C bool `decodini:"-"` // ignored
+			}
+
+			testStruct struct {
+				Inner innerStruct
+			}
+		)
+
+		a := assert.New(t)
+
+		val := testStruct{
+			Inner: innerStruct{
+				A: "foo",
+				B: 42,
+				C: true,
+			},
+		}
+
+		tr := Encode(nil, val)
+		a.NotNil(tr)
+
+		df := slices.Collect(tr.DepthFirst())
+		a.Len(df, 3)
+
+		a.Equal(val, df[0].Value().Interface())
+		a.Equal([]any(nil), df[0].Path())
+
+		a.Equal(val.Inner.A, df[1].Value().Interface())
+		a.Equal([]any{"a"}, df[1].Path())
+
+		a.Equal(val.Inner.B, df[2].Value().Interface())
+		a.Equal([]any{"B"}, df[2].Path())
+	})
+
+	t.Run("Backtracking", func(t *testing.T) {
+		type (
+			innerStruct struct {
+				A string `decodini:"a"`
+				B int
+				C bool `decodini:"-"` // ignored
+			}
+
+			testStruct struct {
+				Inner innerStruct
+				D     string
+				E     int `decodini:"-"` // ignored
+			}
+		)
+
+		a := assert.New(t)
+
+		val := testStruct{
+			Inner: innerStruct{
+				A: "foo",
+				B: 42,
+				C: true,
+			},
+			D: "bar",
+		}
+
+		tr := Encode(nil, val)
+		a.NotNil(tr)
+
+		df := slices.Collect(tr.DepthFirst())
+		a.Len(df, 5)
+
+		a.Equal(val, df[0].Value().Interface())
+		a.Equal([]any(nil), df[0].Path())
+
+		a.Equal(val.Inner, df[1].Value().Interface())
+		a.Equal([]any{"Inner"}, df[1].Path())
+
+		a.Equal(val.Inner.A, df[2].Value().Interface())
+		a.Equal([]any{"Inner", "a"}, df[2].Path())
+
+		a.Equal(val.Inner.B, df[3].Value().Interface())
+		a.Equal([]any{"Inner", "B"}, df[3].Path())
+
+		a.Equal(val.D, df[4].Value().Interface())
+		a.Equal([]any{"D"}, df[4].Path())
+	})
+
+	t.Run("Embedded", func(t *testing.T) {
+		type (
+			EmbeddedStruct struct {
+				A string `decodini:"a"`
+				B int
+				C bool `decodini:"-"` // ignored
+			}
+
+			testStruct struct {
+				EmbeddedStruct
+			}
+		)
+
+		a := assert.New(t)
+
+		val := testStruct{
+			EmbeddedStruct: EmbeddedStruct{
+				A: "foo",
+				B: 42,
+				C: true,
+			},
+		}
+
+		tr := Encode(nil, val)
+		a.NotNil(tr)
+
+		df := slices.Collect(tr.DepthFirst())
+		a.Len(df, 3)
+
+		a.Equal(val, df[0].Value().Interface())
+		a.Equal([]any(nil), df[0].Path())
+
+		a.Equal(val.A, df[1].Value().Interface())
+		a.Equal([]any{"a"}, df[1].Path())
+
+		a.Equal(val.B, df[2].Value().Interface())
+		a.Equal([]any{"B"}, df[2].Path())
+	})
 }
