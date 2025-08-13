@@ -153,3 +153,59 @@ func TestDecode_ShallowSlice_to_ShallowSlice(t *testing.T) {
 	a.EqualValues(expected, actual)
 	a.NoError(err)
 }
+
+func TestDecode_OneEmbeddedStruct(t *testing.T) {
+	type (
+		Embedded struct {
+			A string `decodini:"a"`
+			B int
+			C bool `decodini:"-"`
+		}
+		Outer struct {
+			Embedded
+		}
+	)
+
+	a := assert.New(t)
+
+	from := map[string]any{
+		"a": "foo",
+		"B": 42,
+	}
+	tr := Encode(nil, from)
+
+	to, err := Decode[Outer](nil, tr)
+	a.NoError(err)
+
+	expected := Outer{Embedded: Embedded{A: "foo", B: 42}}
+	a.Equal(expected, to)
+}
+
+func TestDecode_TwoEmbeddedStructs(t *testing.T) {
+	type (
+		EmbeddedA struct {
+			A string `decodini:"a"`
+		}
+		EmbeddedB struct {
+			B int `decodini:"b"`
+		}
+		Outer struct {
+			EmbeddedA
+			EmbeddedB
+		}
+	)
+
+	a := assert.New(t)
+
+	from := map[string]any{
+		"a": "foo",
+		"b": 7,
+	}
+	tr := Encode(nil, from)
+
+	to, err := Decode[Outer](nil, tr)
+	a.NoError(err)
+
+	expected := Outer{EmbeddedA: EmbeddedA{A: "foo"}, EmbeddedB: EmbeddedB{B: 7}}
+	a.Equal(expected, to)
+}

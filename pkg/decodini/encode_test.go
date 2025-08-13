@@ -178,6 +178,102 @@ func TestEncode_ShallowMap(t *testing.T) {
 	}
 }
 
+func TestEncode_OneEmbeddedStruct(t *testing.T) {
+	type (
+		Embedded struct {
+			A string `decodini:"a"`
+			B int
+			C bool `decodini:"-"`
+		}
+		Outer struct {
+			Embedded
+		}
+	)
+
+	a := assert.New(t)
+
+	val := Outer{
+		Embedded: Embedded{
+			A: "foo",
+			B: 42,
+			C: true,
+		},
+	}
+
+	tr := Encode(nil, val)
+	a.NotNil(tr)
+
+	a.Nil(tr.Child("Embedded"))
+
+	children := slices.Collect(tr.Children())
+	a.Len(children, 2)
+	a.Equal("a", children[0].Name())
+	a.Equal("B", children[1].Name())
+
+	{
+		childA := tr.Child("a")
+		a.NotNil(childA)
+		a.Equal(reflect.String, childA.Value().Kind())
+		a.Equal(val.A, childA.Value().String())
+		a.Equal(uint(0), childA.NumChildren())
+	}
+
+	{
+		childB := tr.Child("B")
+		a.NotNil(childB)
+		a.Equal(reflect.Int, childB.Value().Kind())
+		a.Equal(val.B, int(childB.Value().Int()))
+		a.Equal(uint(0), childB.NumChildren())
+	}
+}
+
+func TestEncode_TwoEmbeddedStructs(t *testing.T) {
+	type (
+		EmbeddedA struct {
+			A string `decodini:"a"`
+		}
+		EmbeddedB struct {
+			B int `decodini:"b"`
+		}
+		Outer struct {
+			EmbeddedA
+			EmbeddedB
+		}
+	)
+
+	a := assert.New(t)
+
+	val := Outer{
+		EmbeddedA: EmbeddedA{A: "foo"},
+		EmbeddedB: EmbeddedB{B: 7},
+	}
+
+	tr := Encode(nil, val)
+	a.NotNil(tr)
+
+	a.Nil(tr.Child("EmbeddedA"))
+	a.Nil(tr.Child("EmbeddedB"))
+
+	children := slices.Collect(tr.Children())
+	a.Len(children, 2)
+	a.Equal("a", children[0].Name())
+	a.Equal("b", children[1].Name())
+
+	{
+		childA := tr.Child("a")
+		a.NotNil(childA)
+		a.Equal(reflect.String, childA.Value().Kind())
+		a.Equal(val.A, childA.Value().String())
+	}
+
+	{
+		childB := tr.Child("b")
+		a.NotNil(childB)
+		a.Equal(reflect.Int, childB.Value().Kind())
+		a.Equal(val.B, int(childB.Value().Int()))
+	}
+}
+
 func TestTree_DepthFirst(t *testing.T) {
 	t.Run("Singleton", func(t *testing.T) {
 		type testStruct struct {
