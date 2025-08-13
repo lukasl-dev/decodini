@@ -77,3 +77,33 @@ func isNil(val reflect.Value) bool {
 		return false
 	}
 }
+
+// numStructFields returns the number of flattened, included fields of a struct
+// value, respecting the provided struct tag and expanding anonymous embedded
+// structs. Pointers are dereferenced; nil pointers contribute zero.
+func numStructFields(tag string, val reflect.Value) uint {
+	if val.Kind() == reflect.Pointer {
+		if val.IsNil() {
+			return 0
+		}
+		return numStructFields(tag, val.Elem())
+	}
+	if val.Kind() != reflect.Struct {
+		return 0
+	}
+	typ := val.Type()
+	var n uint
+	for i := range val.NumField() {
+		sf := typ.Field(i)
+		if !includeStructField(tag, sf) {
+			continue
+		}
+		vf := val.Field(i)
+		if sf.Anonymous {
+			n += numStructFields(tag, vf)
+			continue
+		}
+		n++
+	}
+	return n
+}

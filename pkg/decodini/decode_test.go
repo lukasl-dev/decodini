@@ -154,6 +154,27 @@ func TestDecode_ShallowSlice_to_ShallowSlice(t *testing.T) {
 	a.NoError(err)
 }
 
+func TestDecode_FromNilPointerOrInterface_SetsZero(t *testing.T) {
+	a := assert.New(t)
+
+	type S struct {
+		A string
+		B int
+	}
+
+	var p *S = nil
+	trPtr := Encode(nil, p)
+	dst1, err1 := Decode[S](nil, trPtr)
+	a.NoError(err1)
+	a.Equal(S{}, dst1)
+
+	var i any = (*S)(nil)
+	trIface := Encode(nil, i)
+	dst2, err2 := Decode[S](nil, trIface)
+	a.NoError(err2)
+	a.Equal(S{}, dst2)
+}
+
 func TestDecode_OneEmbeddedStruct(t *testing.T) {
 	type (
 		Embedded struct {

@@ -27,18 +27,22 @@ func Encode(enc *Encoding, val any) *Tree {
 	}
 
 	tr := encode(enc, nil, nil, rVal)
-	tr.isNil = val == nil
+	tr.isNil = tr.isNil || val == nil
 	return tr
 }
 
 func encode(enc *Encoding, parent *Tree, name any, val reflect.Value) *Tree {
 	switch val.Kind() {
 	case reflect.Pointer:
+		if val.IsNil() {
+			return &Tree{enc: enc, name: name, parent: parent, val: val, isNil: true}
+		}
 		return encode(enc, parent, name, val.Elem())
 	case reflect.Interface:
-		if !val.IsNil() {
-			return encode(enc, parent, name, val.Elem())
+		if val.IsNil() {
+			return &Tree{enc: enc, name: name, parent: parent, val: val, isNil: true}
 		}
+		return encode(enc, parent, name, val.Elem())
 	}
 	return &Tree{enc: enc, name: name, parent: parent, val: val}
 }
@@ -152,19 +156,9 @@ func (t *Tree) BreadthFirst() iter.Seq[*Tree] {
 func (t *Tree) NumChildren() uint {
 	switch t.val.Kind() {
 	case reflect.Struct:
-		typ := t.val.Type()
-		fields := uint(0)
-		for i := range t.val.NumField() {
-			field := typ.Field(i)
-			if includeStructField(t.enc.StructTag, field) {
-				fields++
-			}
-		}
-		return fields
-
+		return numStructFields(t.enc.StructTag, t.val)
 	case reflect.Map, reflect.Slice, reflect.Array:
 		return uint(t.val.Len())
-
 	default:
 		return 0
 	}

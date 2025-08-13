@@ -178,6 +178,41 @@ func TestEncode_ShallowMap(t *testing.T) {
 	}
 }
 
+func TestEncode_NilPointerAndInterface(t *testing.T) {
+	a := assert.New(t)
+
+	type S struct{ X int }
+
+	var p *S = nil
+	trPtr := Encode(nil, p)
+	a.NotNil(trPtr)
+	a.True(trPtr.IsNil())
+	a.Equal(uint(0), trPtr.NumChildren())
+
+	var i any = (*S)(nil)
+	trIface := Encode(nil, i)
+	a.NotNil(trIface)
+	a.True(trIface.IsNil())
+	a.Equal(uint(0), trIface.NumChildren())
+}
+
+func TestEncode_EmbeddedStruct_NumChildrenMatchesFlattened(t *testing.T) {
+	type Embedded struct {
+		A string `decodini:"a"`
+		B int
+	}
+	type Outer struct{ Embedded }
+
+	a := assert.New(t)
+
+	tr := Encode(nil, Outer{Embedded: Embedded{A: "x", B: 1}})
+	a.NotNil(tr)
+
+	// NumChildren should equal the number of yielded children (flattened)
+	children := slices.Collect(tr.Children())
+	a.Equal(uint(len(children)), tr.NumChildren())
+}
+
 func TestEncode_OneEmbeddedStruct(t *testing.T) {
 	type (
 		Embedded struct {
