@@ -34,3 +34,25 @@ func TestIssue_2(t *testing.T) {
 	}
 	a.Equal(expected, to)
 }
+
+// http://github.com/lukasl-dev/decodini/issues/4
+func TestIssue_4(t *testing.T) {
+	type Payload struct {
+		Value *int `decodini:"value"`
+	}
+
+	a := assert.New(t)
+
+	from := map[string]any{
+		"value": 42,
+	}
+	tr := Encode(nil, from)
+
+	to, err := Decode[Payload](nil, tr)
+	a.NoError(err)
+
+	expected := Payload{
+		Value: ptr(42),
+	}
+	a.Equal(expected, to)
+}
