@@ -85,7 +85,7 @@ func TestDecode_ShallowStruct_to_ShallowMap(t *testing.T) {
 func TestDecode_ShallowMap_to_ShallowStruct(t *testing.T) {
 	type toStruct struct {
 		A string `decodini:"a"`
-		B int
+		B *int
 		C int `decodini:"-"`
 		x bool
 	}
@@ -104,7 +104,7 @@ func TestDecode_ShallowMap_to_ShallowStruct(t *testing.T) {
 
 	expected := toStruct{
 		A: "foo",
-		B: 42,
+		B: ptr(42),
 		C: 0,
 		x: false,
 	}
@@ -208,4 +208,8 @@ func TestDecode_TwoEmbeddedStructs(t *testing.T) {
 
 	expected := Outer{EmbeddedA: EmbeddedA{A: "foo"}, EmbeddedB: EmbeddedB{B: 7}}
 	a.Equal(expected, to)
+}
+
+func ptr[T any](value T) *T {
+	return &value
 }

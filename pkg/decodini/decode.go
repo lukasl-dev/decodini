@@ -51,7 +51,15 @@ func Decode[T any](dec *Decoding, tr *Tree) (T, error) {
 }
 
 func (dec *Decoding) into(node *Tree, target DecodeTarget) error {
-	if target.Value.Kind() == reflect.Ptr {
+	if target.Value.Kind() == reflect.Pointer {
+		if target.Value.IsNil() {
+			if !target.Value.CanSet() {
+				return newDecodeErrorf(node, target, "cannot decode into unsettable value")
+			}
+
+			target.Value.Set(reflect.New(target.Value.Type().Elem()))
+		}
+
 		target.Value = target.Value.Elem()
 		return dec.into(node, target)
 	}
