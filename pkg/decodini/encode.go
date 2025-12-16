@@ -33,7 +33,7 @@ func Encode(enc *Encoding, val any) *Tree {
 
 func encode(enc *Encoding, parent *Tree, name any, val reflect.Value) *Tree {
 	switch val.Kind() {
-	case reflect.Ptr:
+	case reflect.Pointer:
 		return encode(enc, parent, name, val.Elem())
 	case reflect.Interface:
 		if !val.IsNil() {
