@@ -35,7 +35,7 @@ func TestIssue_2(t *testing.T) {
 	a.Equal(expected, to)
 }
 
-// http://github.com/lukasl-dev/decodini/issues/4
+// https://github.com/lukasl-dev/decodini/issues/4
 func TestIssue_4(t *testing.T) {
 	type Payload struct {
 		Value *int `decodini:"value"`
