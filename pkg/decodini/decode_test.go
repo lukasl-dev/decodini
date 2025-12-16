@@ -210,6 +210,65 @@ func TestDecode_TwoEmbeddedStructs(t *testing.T) {
 	a.Equal(expected, to)
 }
 
+func TestDecode_Slice_to_SliceOfPointers(t *testing.T) {
+	a := assert.New(t)
+
+	from := []int{1, 2, 3}
+	tr := Encode(nil, from)
+
+	to, err := Decode[[]*int](nil, tr)
+	a.NoError(err)
+
+	a.Equal(len(from), len(to))
+	for i, v := range from {
+		if a.NotNil(to[i]) {
+			a.Equal(v, *to[i])
+		}
+	}
+}
+
+func TestDecode_Map_to_MapOfPointers(t *testing.T) {
+	a := assert.New(t)
+
+	from := map[string]int{
+		"a": 1,
+		"b": 2,
+	}
+	tr := Encode(nil, from)
+
+	to, err := Decode[map[string]*int](nil, tr)
+	a.NoError(err)
+
+	a.Equal(len(from), len(to))
+	for k, v := range from {
+		ptrVal, ok := to[k]
+		a.True(ok)
+		if a.NotNil(ptrVal) {
+			a.Equal(v, *ptrVal)
+		}
+	}
+}
+
+func TestDecode_PointerToPointerStructField(t *testing.T) {
+	type toStruct struct {
+		V **int `decodini:"v"`
+	}
+
+	a := assert.New(t)
+
+	from := map[string]any{
+		"v": 42,
+	}
+	tr := Encode(nil, from)
+
+	to, err := Decode[toStruct](nil, tr)
+	a.NoError(err)
+
+	a.NotNil(to.V)
+	a.NotNil(*to.V)
+	a.Equal(42, **to.V)
+}
+
 func ptr[T any](value T) *T {
 	return &value
 }

@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// http://github.com/lukasl-dev/decodini/issues/2
+// https://github.com/lukasl-dev/decodini/issues/2
 func TestIssue_2(t *testing.T) {
 	type (
 		Embedded struct {
