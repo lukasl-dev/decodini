@@ -2,6 +2,7 @@ package decodini
 
 import (
 	"reflect"
+	"unicode/utf16"
 )
 
 type Decoder func(tr *Tree, target DecodeTarget) error
@@ -105,6 +106,53 @@ func (dec *Decoding) into(node *Tree, target DecodeTarget) error {
 }
 
 func (dec *Decoding) intoScalar(node *Tree, target DecodeTarget) error {
+	if target.Value.Kind() == reflect.String {
+		switch node.Value().Kind() {
+		case reflect.Slice, reflect.Array:
+			elemKind := node.Value().Type().Elem().Kind()
+			n := node.Value().Len()
+			switch elemKind {
+			case reflect.Uint8, reflect.Int8:
+				b := make([]byte, n)
+				for i := range n {
+					v := node.Value().Index(i)
+					if elemKind == reflect.Uint8 {
+						b[i] = byte(v.Uint())
+					} else {
+						b[i] = byte(v.Int())
+					}
+				}
+				target.Value.SetString(string(b))
+				return nil
+			case reflect.Uint16, reflect.Int16:
+				u := make([]uint16, n)
+				for i := range n {
+					v := node.Value().Index(i)
+					if elemKind == reflect.Uint16 {
+						u[i] = uint16(v.Uint())
+					} else {
+						u[i] = uint16(v.Int())
+					}
+				}
+				target.Value.SetString(string(utf16.Decode(u)))
+				return nil
+			case reflect.Int, reflect.Int32, reflect.Int64, reflect.Uint, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+				r := make([]rune, n)
+				for i := range n {
+					v := node.Value().Index(i)
+					switch elemKind {
+					case reflect.Int, reflect.Int32, reflect.Int64:
+						r[i] = rune(v.Int())
+					default:
+						r[i] = rune(v.Uint())
+					}
+				}
+				target.Value.SetString(string(r))
+				return nil
+			}
+		}
+	}
+
 	if !node.IsPrimitive() {
 		return newDecodeErrorf(
 			node,
@@ -189,6 +237,38 @@ func (dec *Decoding) intoStructFromStructOrMap(node *Tree, target DecodeTarget) 
 }
 
 func (dec *Decoding) intoSlice(node *Tree, target DecodeTarget) error {
+	if node.Value().Kind() == reflect.String {
+		s := node.Value().String()
+		elemType := target.Value.Type().Elem()
+		elemKind := elemType.Kind()
+		switch elemKind {
+		case reflect.Uint8, reflect.Int8:
+			b := []byte(s)
+			dst := reflect.MakeSlice(target.Value.Type(), len(b), len(b))
+			for i := range len(b) {
+				dst.Index(i).Set(reflect.ValueOf(b[i]).Convert(elemType))
+			}
+			target.Value.Set(dst)
+			return nil
+		case reflect.Uint16, reflect.Int16:
+			u := utf16.Encode([]rune(s))
+			dst := reflect.MakeSlice(target.Value.Type(), len(u), len(u))
+			for i := range len(u) {
+				dst.Index(i).Set(reflect.ValueOf(u[i]).Convert(elemType))
+			}
+			target.Value.Set(dst)
+			return nil
+		case reflect.Int, reflect.Int32, reflect.Int64, reflect.Uint, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+			r := []rune(s)
+			dst := reflect.MakeSlice(target.Value.Type(), len(r), len(r))
+			for i := range len(r) {
+				dst.Index(i).Set(reflect.ValueOf(r[i]).Convert(elemType))
+			}
+			target.Value.Set(dst)
+			return nil
+		}
+	}
+
 	switch node.Value().Kind() {
 	case reflect.Slice, reflect.Array:
 		return dec.intoSliceFromSliceOrArray(node, target)

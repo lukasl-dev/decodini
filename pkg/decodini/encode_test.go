@@ -32,6 +32,36 @@ func TestEncode_String(t *testing.T) {
 	a.Equal("decodini", tr.Value().String())
 }
 
+func TestEncode_ByteSlice(t *testing.T) {
+	a := assert.New(t)
+
+	val := []byte("héllö 🌍")
+	tr := Encode(nil, val)
+
+	a.NotNil(tr)
+	a.Equal(uint(len(val)), tr.NumChildren())
+
+	child0 := tr.Child(0)
+	a.NotNil(child0)
+	a.Equal(reflect.Uint8, child0.Value().Kind())
+	a.Equal(val[0], byte(child0.Value().Uint()))
+}
+
+func TestEncode_RuneSlice(t *testing.T) {
+	a := assert.New(t)
+
+	val := []rune("héllö 🌍")
+	tr := Encode(nil, val)
+
+	a.NotNil(tr)
+	a.Equal(uint(len(val)), tr.NumChildren())
+
+	child0 := tr.Child(0)
+	a.NotNil(child0)
+	a.Equal(reflect.Int32, child0.Value().Kind())
+	a.Equal(val[0], rune(child0.Value().Int()))
+}
+
 func TestEncode_ShallowStruct(t *testing.T) {
 	type testStruct struct {
 		A string `decodini:"a"`

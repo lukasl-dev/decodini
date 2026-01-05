@@ -2,6 +2,7 @@ package decodini
 
 import (
 	"testing"
+	"unicode/utf16"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -288,6 +289,305 @@ func TestDecode_PointerToPointerStructField(t *testing.T) {
 	a.NotNil(to.V)
 	a.NotNil(*to.V)
 	a.Equal(42, **to.V)
+}
+
+func TestDecode_String_to_ByteSlice(t *testing.T) {
+	a := assert.New(t)
+
+	from := "héllö 🌍"
+	tr := Encode(nil, from)
+
+	to, err := Decode[[]byte](nil, tr)
+	a.NoError(err)
+	a.Equal([]byte(from), to)
+}
+
+func TestDecode_String_to_RuneSlice(t *testing.T) {
+	a := assert.New(t)
+
+	from := "héllö 🌍"
+	tr := Encode(nil, from)
+
+	to, err := Decode[[]rune](nil, tr)
+	a.NoError(err)
+	a.Equal([]rune(from), to)
+}
+
+func TestDecode_ByteSlice_to_String(t *testing.T) {
+	a := assert.New(t)
+
+	from := []byte("héllö 🌍")
+	tr := Encode(nil, from)
+
+	to, err := Decode[string](nil, tr)
+	a.NoError(err)
+	a.Equal(string(from), to)
+}
+
+func TestDecode_RuneSlice_to_String(t *testing.T) {
+	a := assert.New(t)
+
+	from := []rune("héllö 🌍")
+	tr := Encode(nil, from)
+
+	to, err := Decode[string](nil, tr)
+	a.NoError(err)
+	a.Equal(string(from), to)
+}
+
+func TestDecode_String_to_Int8Slice(t *testing.T) {
+	a := assert.New(t)
+
+	from := "héllö 🌍"
+	tr := Encode(nil, from)
+
+	to, err := Decode[[]int8](nil, tr)
+	a.NoError(err)
+
+	b := []byte(from)
+	expected := make([]int8, len(b))
+	for i := range len(b) {
+		expected[i] = int8(b[i])
+	}
+	a.Equal(expected, to)
+}
+
+func TestDecode_Int8Slice_to_String(t *testing.T) {
+	a := assert.New(t)
+
+	expected := "héllö 🌍"
+	b := []byte(expected)
+	from := make([]int8, len(b))
+	for i := range len(b) {
+		from[i] = int8(b[i])
+	}
+	tr := Encode(nil, from)
+
+	to, err := Decode[string](nil, tr)
+	a.NoError(err)
+	a.Equal(expected, to)
+}
+
+func TestDecode_String_to_Uint16Slice_UTF16(t *testing.T) {
+	a := assert.New(t)
+
+	from := "héllö 🌍"
+	tr := Encode(nil, from)
+
+	to, err := Decode[[]uint16](nil, tr)
+	a.NoError(err)
+	a.Equal(utf16.Encode([]rune(from)), to)
+}
+
+func TestDecode_Uint16Slice_to_String_UTF16(t *testing.T) {
+	a := assert.New(t)
+
+	expected := "héllö 🌍"
+	from := utf16.Encode([]rune(expected))
+	tr := Encode(nil, from)
+
+	to, err := Decode[string](nil, tr)
+	a.NoError(err)
+	a.Equal(expected, to)
+}
+
+func TestDecode_String_to_Int16Slice_UTF16(t *testing.T) {
+	a := assert.New(t)
+
+	from := "héllö 🌍"
+	tr := Encode(nil, from)
+
+	to, err := Decode[[]int16](nil, tr)
+	a.NoError(err)
+
+	u := utf16.Encode([]rune(from))
+	expected := make([]int16, len(u))
+	for i := range len(u) {
+		expected[i] = int16(u[i])
+	}
+	a.Equal(expected, to)
+}
+
+func TestDecode_Int16Slice_to_String_UTF16(t *testing.T) {
+	a := assert.New(t)
+
+	expected := "héllö 🌍"
+	u := utf16.Encode([]rune(expected))
+	from := make([]int16, len(u))
+	for i := range len(u) {
+		from[i] = int16(u[i])
+	}
+	tr := Encode(nil, from)
+
+	to, err := Decode[string](nil, tr)
+	a.NoError(err)
+	a.Equal(expected, to)
+}
+
+func TestDecode_String_to_Int32Slice(t *testing.T) {
+	a := assert.New(t)
+
+	from := "héllö 🌍"
+	tr := Encode(nil, from)
+
+	to, err := Decode[[]int32](nil, tr)
+	a.NoError(err)
+	a.Equal([]rune(from), to)
+}
+
+func TestDecode_Int32Slice_to_String(t *testing.T) {
+	a := assert.New(t)
+
+	expected := "héllö 🌍"
+	from := []int32(expected)
+	tr := Encode(nil, from)
+
+	to, err := Decode[string](nil, tr)
+	a.NoError(err)
+	a.Equal(expected, to)
+}
+
+func TestDecode_String_to_Int64Slice(t *testing.T) {
+	a := assert.New(t)
+
+	from := "héllö 🌍"
+	tr := Encode(nil, from)
+
+	to, err := Decode[[]int64](nil, tr)
+	a.NoError(err)
+
+	r := []rune(from)
+	expected := make([]int64, len(r))
+	for i := range len(r) {
+		expected[i] = int64(r[i])
+	}
+	a.Equal(expected, to)
+}
+
+func TestDecode_Int64Slice_to_String(t *testing.T) {
+	a := assert.New(t)
+
+	expected := "héllö 🌍"
+	r := []rune(expected)
+	from := make([]int64, len(r))
+	for i := range len(r) {
+		from[i] = int64(r[i])
+	}
+	tr := Encode(nil, from)
+
+	to, err := Decode[string](nil, tr)
+	a.NoError(err)
+	a.Equal(expected, to)
+}
+
+func TestDecode_String_to_Uint32Slice(t *testing.T) {
+	a := assert.New(t)
+
+	from := "héllö 🌍"
+	tr := Encode(nil, from)
+
+	to, err := Decode[[]uint32](nil, tr)
+	a.NoError(err)
+
+	r := []rune(from)
+	expected := make([]uint32, len(r))
+	for i := range len(r) {
+		expected[i] = uint32(r[i])
+	}
+	a.Equal(expected, to)
+}
+
+func TestDecode_Uint32Slice_to_String(t *testing.T) {
+	a := assert.New(t)
+
+	expected := "héllö 🌍"
+	r := []rune(expected)
+	from := make([]uint32, len(r))
+	for i := range len(r) {
+		from[i] = uint32(r[i])
+	}
+	tr := Encode(nil, from)
+
+	to, err := Decode[string](nil, tr)
+	a.NoError(err)
+	a.Equal(expected, to)
+}
+
+func TestDecode_String_to_Uint64Slice(t *testing.T) {
+	a := assert.New(t)
+
+	from := "héllö 🌍"
+	tr := Encode(nil, from)
+
+	to, err := Decode[[]uint64](nil, tr)
+	a.NoError(err)
+
+	r := []rune(from)
+	expected := make([]uint64, len(r))
+	for i := range len(r) {
+		expected[i] = uint64(r[i])
+	}
+	a.Equal(expected, to)
+}
+
+func TestDecode_Uint64Slice_to_String(t *testing.T) {
+	a := assert.New(t)
+
+	expected := "héllö 🌍"
+	r := []rune(expected)
+	from := make([]uint64, len(r))
+	for i := range len(r) {
+		from[i] = uint64(r[i])
+	}
+	tr := Encode(nil, from)
+
+	to, err := Decode[string](nil, tr)
+	a.NoError(err)
+	a.Equal(expected, to)
+}
+
+func TestDecode_EmptyString_to_ByteSlice(t *testing.T) {
+	a := assert.New(t)
+
+	from := ""
+	tr := Encode(nil, from)
+
+	to, err := Decode[[]byte](nil, tr)
+	a.NoError(err)
+	a.Equal([]byte{}, to)
+}
+
+func TestDecode_EmptyByteSlice_to_String(t *testing.T) {
+	a := assert.New(t)
+
+	from := []byte{}
+	tr := Encode(nil, from)
+
+	to, err := Decode[string](nil, tr)
+	a.NoError(err)
+	a.Equal("", to)
+}
+
+func TestDecode_ASCIIOnly_String_to_ByteSlice(t *testing.T) {
+	a := assert.New(t)
+
+	from := "hello world"
+	tr := Encode(nil, from)
+
+	to, err := Decode[[]byte](nil, tr)
+	a.NoError(err)
+	a.Equal([]byte(from), to)
+}
+
+func TestDecode_ASCIIOnly_ByteSlice_to_String(t *testing.T) {
+	a := assert.New(t)
+
+	from := []byte("hello world")
+	tr := Encode(nil, from)
+
+	to, err := Decode[string](nil, tr)
+	a.NoError(err)
+	a.Equal(string(from), to)
 }
 
 func ptr[T any](value T) *T {
