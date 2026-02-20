@@ -10,7 +10,9 @@
 
 <br />
 
-Decodini is a Go library for transmuting between different data structures. It uses an intermediate tree representation to convert between structs, maps, slices, and primitive types.
+Decodini is a small Go library for moving data between structs, maps, slices, and primitives.
+
+It works in two steps internally: encode the source into a `Tree`, then decode that tree into the target type. Most users can just call `Transmute`.
 
 ## Installation
 
@@ -79,14 +81,6 @@ var target UserTarget
 err := decodini.TransmuteInto(nil, src, &target)
 ```
 
-## Features
-
-- **Direct Transmutation**: Convert between types without manual intermediate steps.
-- **Recursive Transformation**: Full support for nested structures and collections.
-- **Pointer Handling**: Automatic allocation and dereferencing of pointers.
-- **Lazy Evaluation**: The intermediate `Tree` representation is evaluated only as needed.
-- **Type Conversions**: Built-in logic for converting between strings and various slice types.
-
 ## Advanced Configuration
 
 The `Transmutation` struct allows for customisation of the encoding and decoding behaviour.
@@ -103,4 +97,4 @@ dst, err := decodini.Transmute[UserTarget](tm, src)
 
 ## License
 
-This project is licensed under the MIT License. See the `LICENSE` file for details.
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
