@@ -226,6 +226,41 @@ func TestEncode_NilPointerAndInterface(t *testing.T) {
 	a.Equal(uint(0), trIface.NumChildren())
 }
 
+func TestEncode_ShallowMap_WithNilInterfaceValue(t *testing.T) {
+	a := assert.New(t)
+
+	val := map[string]any{
+		"value": nil,
+	}
+	tr := Encode(nil, val)
+
+	a.NotNil(tr)
+	a.Equal(uint(1), tr.NumChildren())
+
+	child := tr.Child("value")
+	a.NotNil(child)
+	a.Equal("value", child.Name())
+	a.True(child.IsNil())
+	a.Equal(uint(0), child.NumChildren())
+}
+
+func TestEncode_StructWithNilPointerField(t *testing.T) {
+	type S struct {
+		Value *int `decodini:"value"`
+	}
+
+	a := assert.New(t)
+
+	tr := Encode(nil, S{})
+	a.NotNil(tr)
+	a.Equal(uint(1), tr.NumChildren())
+
+	child := tr.Child("value")
+	a.NotNil(child)
+	a.True(child.IsNil())
+	a.Equal(uint(0), child.NumChildren())
+}
+
 func TestEncode_EmbeddedStruct_NumChildrenMatchesFlattened(t *testing.T) {
 	type Embedded struct {
 		A string `decodini:"a"`

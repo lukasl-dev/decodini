@@ -291,6 +291,58 @@ func TestDecode_PointerToPointerStructField(t *testing.T) {
 	a.Equal(42, **to.V)
 }
 
+func TestDecode_NilIntoPointerStructField_LeavesNil(t *testing.T) {
+	type toStruct struct {
+		V *int `decodini:"v"`
+	}
+
+	a := assert.New(t)
+
+	from := map[string]any{
+		"v": nil,
+	}
+	tr := Encode(nil, from)
+
+	to, err := Decode[toStruct](nil, tr)
+	a.NoError(err)
+	a.Nil(to.V)
+}
+
+func TestDecode_NilIntoPointerToPointerStructField_LeavesNil(t *testing.T) {
+	type toStruct struct {
+		V **int `decodini:"v"`
+	}
+
+	a := assert.New(t)
+
+	from := map[string]any{
+		"v": nil,
+	}
+	tr := Encode(nil, from)
+
+	to, err := Decode[toStruct](nil, tr)
+	a.NoError(err)
+	a.Nil(to.V)
+}
+
+func TestDecode_MapWithNilEntry_to_MapOfPointers(t *testing.T) {
+	a := assert.New(t)
+
+	from := map[string]any{
+		"a": nil,
+		"b": 42,
+	}
+	tr := Encode(nil, from)
+
+	to, err := Decode[map[string]*int](nil, tr)
+	a.NoError(err)
+	a.Len(to, 2)
+	a.Nil(to["a"])
+	if a.NotNil(to["b"]) {
+		a.Equal(42, *to["b"])
+	}
+}
+
 func TestDecode_String_to_ByteSlice(t *testing.T) {
 	a := assert.New(t)
 

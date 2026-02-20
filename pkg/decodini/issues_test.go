@@ -56,3 +56,23 @@ func TestIssue_4(t *testing.T) {
 	}
 	a.Equal(expected, to)
 }
+
+// https://github.com/lukasl-dev/decodini/issues/5
+func TestIssue_5(t *testing.T) {
+	type toStruct struct {
+		Value *int `decodini:"value"`
+	}
+
+	a := assert.New(t)
+
+	from := map[string]any{
+		"value": nil,
+	}
+	tr := Encode(nil, from)
+
+	to, err := Decode[toStruct](nil, tr)
+	a.NoError(err)
+
+	var expected toStruct
+	a.Equal(expected, to)
+}
